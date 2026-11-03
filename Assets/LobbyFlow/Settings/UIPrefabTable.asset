@@ -17,3 +17,9 @@ MonoBehaviour:
     Prefab: {fileID: 1710722978637315065, guid: 8192025ed9dd5e449914ad4592ecdae5, type: 3}
   - TypeName: LobbyFlow.UI.LoadingOverlay
     Prefab: {fileID: 4787981182921157511, guid: df65d8509f8cd944089cd8aa2a586102, type: 3}
+  - TypeName: LobbyFlow.UI.PatchPopup
+    Prefab: {fileID: 6930196827834764814, guid: cca7c27d8a3ee6a49b6af20e3f381f43, type: 3}
+  - TypeName: LobbyFlow.UI.ErrorPopup
+    Prefab: {fileID: 6650912193413558319, guid: a1c3e087c6cf97646a5dd852151b6e87, type: 3}
+  - TypeName: LobbyFlow.UI.MessageToast
+    Prefab: {fileID: 2338840556898894780, guid: 248e63350d2299148b2fa236001093a5, type: 3}

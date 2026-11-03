@@ -45,15 +45,15 @@ namespace LobbyFlow.Preview
         public event Action StateChanged;
 
         public PreviewState State { get; private set; }
-        public CharacterDefinition Current { get; private set; }
+        public IPreviewSource Current { get; private set; }
         public Exception LastError { get; private set; }
 
-        public void Show(CharacterDefinition character)
+        public void Show(IPreviewSource source)
         {
-            if (_disposed || character == null)
+            if (_disposed || source == null)
                 return;
 
-            Run(character);
+            Run(source);
         }
 
         public void Retry()
@@ -74,7 +74,7 @@ namespace LobbyFlow.Preview
             LobbyLog.Info($"{_owner} 미리보기 해제");
         }
 
-        private async void Run(CharacterDefinition character)
+        private async void Run(IPreviewSource source)
         {
             CancelRequest();
             ReleaseCurrent();
@@ -82,27 +82,27 @@ namespace LobbyFlow.Preview
             var requestId = ++_requestId;
             var cts = new CancellationTokenSource();
             _requestCts = cts;
-            Current = character;
+            Current = source;
             LastError = null;
             SetState(PreviewState.Loading);
-            LobbyLog.Info($"{_owner} #{requestId} 요청 {character.Id}");
+            LobbyLog.Info($"{_owner} #{requestId} 요청 {source.PreviewKey}");
 
             PreviewAsset asset;
             try
             {
-                asset = await _loader.LoadAsync(character, cts.Token);
+                asset = await _loader.LoadAsync(source, cts.Token);
             }
             catch (OperationCanceledException)
             {
                 // 로더가 받은 리소스를 이미 반환했다. 이 요청을 끊은 쪽이 상태를 정한다.
-                LobbyLog.Info($"{_owner} #{requestId} 취소 완료 {character.Id}");
+                LobbyLog.Info($"{_owner} #{requestId} 취소 완료 {source.PreviewKey}");
                 return;
             }
             catch (Exception e)
             {
                 if (!IsCurrent(requestId))
                 {
-                    LobbyLog.Info($"{_owner} #{requestId} 무효 요청의 실패 무시 {character.Id}");
+                    LobbyLog.Info($"{_owner} #{requestId} 무효 요청의 실패 무시 {source.PreviewKey}");
                     return;
                 }
 
@@ -117,14 +117,14 @@ namespace LobbyFlow.Preview
             {
                 asset.Release();
                 ResourceCounters.StaleResultReleased();
-                LobbyLog.Info($"{_owner} #{requestId} 늦게 도착한 결과 반환 {character.Id}");
+                LobbyLog.Info($"{_owner} #{requestId} 늦게 도착한 결과 반환 {source.PreviewKey}");
                 return;
             }
 
             if (_anchor == null)
             {
                 asset.Release();
-                LastError = new PreviewLoadException(character.Id, "미리보기 위치가 사라졌다");
+                LastError = new PreviewLoadException(source.PreviewKey, "미리보기 위치가 사라졌다");
                 SetState(PreviewState.Failed);
                 return;
             }
@@ -132,7 +132,7 @@ namespace LobbyFlow.Preview
             _asset = asset;
             _instance = Object.Instantiate(asset.Prefab, _anchor, false);
             ResourceCounters.InstanceCreated();
-            LobbyLog.Info($"{_owner} #{requestId} 표시 {character.Id}");
+            LobbyLog.Info($"{_owner} #{requestId} 표시 {source.PreviewKey}");
             SetState(PreviewState.Ready);
         }
 

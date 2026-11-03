@@ -18,13 +18,13 @@ namespace LobbyFlow.Loading
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         }
 
-        public async Awaitable<PreviewAsset> LoadAsync(CharacterDefinition character, CancellationToken cancellationToken)
+        public async Awaitable<PreviewAsset> LoadAsync(IPreviewSource source, CancellationToken cancellationToken)
         {
             var delay = LoadFaultSettings.ConsumeDelay();
             var fail = LoadFaultSettings.ConsumeFailure();
             var waitToken = LoadFaultSettings.IgnoreCancellation ? CancellationToken.None : cancellationToken;
 
-            var asset = await _inner.LoadAsync(character, cancellationToken);
+            var asset = await _inner.LoadAsync(source, cancellationToken);
 
             try
             {
@@ -32,7 +32,7 @@ namespace LobbyFlow.Loading
                     await Awaitable.WaitForSecondsAsync(delay, waitToken);
 
                 if (fail)
-                    throw new PreviewLoadException(character.Id, "테스트 메뉴가 주입한 실패", injected: true);
+                    throw new PreviewLoadException(source.PreviewKey, "테스트 메뉴가 주입한 실패", injected: true);
 
                 return asset;
             }

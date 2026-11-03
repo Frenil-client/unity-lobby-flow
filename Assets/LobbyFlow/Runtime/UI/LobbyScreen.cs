@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using LobbyFlow.Audio;
+using LobbyFlow.Chapters;
 using LobbyFlow.Characters;
 using LobbyFlow.Scenes;
 using UISystem;
@@ -8,22 +10,26 @@ using UnityEngine.UI;
 
 namespace LobbyFlow.UI
 {
-    /// <summary>로비 주 화면. 캐릭터 목록에서 상세 팝업을 열고, 선택한 캐릭터로 던전에 들어간다.</summary>
+    /// <summary>로비 주 화면. 캐릭터 목록에서 상세 팝업을 열고, 고른 챕터에 선택한 캐릭터로 들어간다.</summary>
     public sealed class LobbyScreen : UIScreen
     {
         [SerializeField] private CharacterCatalog _catalog;
         [SerializeField] private RectTransform _slotContainer;
         [SerializeField] private CharacterSlotView _slotTemplate;
+        [SerializeField] private ChapterCatalog _chapters;
+        [SerializeField] private RectTransform _chapterContainer;
+        [SerializeField] private ChapterButtonView _chapterTemplate;
         [SerializeField] private Text _selectedLabel;
         [SerializeField] private Button _enterDungeonButton;
+        [SerializeField] private AudioClip _bgm;
 
         private readonly List<CharacterSlotView> _slots = new();
+        private readonly List<ChapterButtonView> _chapterButtons = new();
         private bool _openingDetail;
 
         private void Awake()
         {
             _slotTemplate.gameObject.SetActive(false);
-
             for (var i = 0; i < _catalog.Count; i++)
             {
                 var index = i;
@@ -33,9 +39,27 @@ namespace LobbyFlow.UI
                 _slots.Add(slot);
             }
 
-            _enterDungeonButton.onClick.AddListener(() => SceneFlow.Load(SceneFlow.Dungeon));
+            _chapterTemplate.gameObject.SetActive(false);
+            for (var i = 0; i < _chapters.Count; i++)
+            {
+                var chapter = _chapters[i];
+                var button = Instantiate(_chapterTemplate, _chapterContainer, false);
+                button.gameObject.SetActive(true);
+                button.Bind(chapter, () => SelectChapter(chapter));
+                _chapterButtons.Add(button);
+            }
+
+            _enterDungeonButton.onClick.AddListener(EnterChapter);
             RefreshSelection();
         }
+
+        private void Start()
+        {
+            AudioService.PlayBgm(_bgm);
+            MessageToast.Show(LobbyServices.ConsumeNotice());
+        }
+
+        private void OnDestroy() => AudioService.StopBgm(_bgm);
 
         private void Update()
         {
@@ -69,7 +93,7 @@ namespace LobbyFlow.UI
             if (popup == null)
                 return;
 
-            popup.Bind(_catalog, index);
+            popup.Bind(_catalog, index, EnterChapter);
             await popup.WaitForCloseAsync();
 
             // 팝업이 열린 사이 씬을 떠났으면 이 화면은 이미 파괴됐다.
@@ -77,13 +101,43 @@ namespace LobbyFlow.UI
                 RefreshSelection();
         }
 
+        private void SelectChapter(ChapterDefinition chapter)
+        {
+            LobbyServices.SelectedChapterId = chapter.Id;
+            RefreshSelection();
+        }
+
+        private void EnterChapter()
+        {
+            if (_chapters.Count == 0)
+                return;
+
+            SceneFlow.Load(SelectedChapter().SceneName);
+        }
+
+        private ChapterDefinition SelectedChapter() => _chapters[Mathf.Max(0, _chapters.IndexOf(LobbyServices.SelectedChapterId))];
+
         private void RefreshSelection()
         {
             var selected = Mathf.Max(0, _catalog.IndexOf(LobbyServices.SelectedCharacterId));
             for (var i = 0; i < _slots.Count; i++)
                 _slots[i].SetSelected(i == selected);
 
-            _selectedLabel.text = _catalog.Count > 0 ? $"출전 캐릭터: {_catalog[selected].DisplayName}" : "캐릭터 없음";
+            var chapterIndex = Mathf.Max(0, _chapters.IndexOf(LobbyServices.SelectedChapterId));
+            for (var i = 0; i < _chapterButtons.Count; i++)
+                _chapterButtons[i].SetSelected(i == chapterIndex);
+
+            if (_catalog.Count == 0)
+            {
+                _selectedLabel.text = "캐릭터 없음";
+                return;
+            }
+
+            var character = _catalog[selected];
+            var costume = character.FindCostume(LobbyServices.SelectedCostumeId);
+            _selectedLabel.text = costume != null
+                ? $"출전: {character.DisplayName} ({costume.DisplayName})"
+                : $"출전: {character.DisplayName}";
         }
     }
 }

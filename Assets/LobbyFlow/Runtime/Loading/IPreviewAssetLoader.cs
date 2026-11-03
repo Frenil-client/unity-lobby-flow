@@ -12,6 +12,6 @@ namespace LobbyFlow.Loading
     /// </summary>
     public interface IPreviewAssetLoader
     {
-        Awaitable<PreviewAsset> LoadAsync(CharacterDefinition character, CancellationToken cancellationToken);
+        Awaitable<PreviewAsset> LoadAsync(IPreviewSource source, CancellationToken cancellationToken);
     }
 }

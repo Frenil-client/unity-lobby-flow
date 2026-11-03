@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 913a6ef520fa5e34fae6861f906e5965, type: 3}
+  m_Name: chapter02
+  m_EditorClassIdentifier: LobbyFlow.Runtime::LobbyFlow.Chapters.ChapterDefinition
+  _id: chapter02
+  _displayName: "\uCC55\uD130 2 \xB7 \uC5BC\uC74C \uB3D9\uAD74"
+  _sceneName: Chapter02
+  _icon: {fileID: 21300000, guid: 47386b02d619e8f42ba2c31cd749e64f, type: 3}

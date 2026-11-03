@@ -10,16 +10,16 @@ namespace LobbyFlow.Loading
     /// </summary>
     public sealed class DirectPreviewAssetLoader : IPreviewAssetLoader
     {
-        public async Awaitable<PreviewAsset> LoadAsync(CharacterDefinition character, CancellationToken cancellationToken)
+        public async Awaitable<PreviewAsset> LoadAsync(IPreviewSource source, CancellationToken cancellationToken)
         {
             // 실제 로더처럼 호출한 프레임 안에서 완료하지 않는다. 동기 완료를 전제로 한 코드가 숨지 않게 한다.
             await Awaitable.NextFrameAsync(cancellationToken);
 
-            if (character.PreviewPrefab == null)
-                throw new PreviewLoadException(character.Id, "미리보기 프리팹이 연결되지 않았다");
+            if (source.PreviewPrefab == null)
+                throw new PreviewLoadException(source.PreviewKey, "미리보기 프리팹이 연결되지 않았다");
 
             ResourceCounters.AssetAcquired();
-            return new PreviewAsset(character.Id, character.PreviewPrefab, ResourceCounters.AssetReleased);
+            return new PreviewAsset(source.PreviewKey, source.PreviewPrefab, ResourceCounters.AssetReleased);
         }
     }
 }

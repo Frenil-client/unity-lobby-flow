@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f570437e42e0c784189ebe8ed3a7ff3b, type: 3}
+  m_Name: mage_winter
+  m_EditorClassIdentifier: LobbyFlow.Runtime::LobbyFlow.Characters.CostumeDefinition
+  _id: mage_winter
+  _displayName: "\uACA8\uC6B8 \uCD95\uC81C"
+  _isSeasonal: 1
+  _previewPrefab: {fileID: 5714271270184515791, guid: 4c4f46ca205130b4fb69021fd25b819a, type: 3}

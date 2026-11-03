@@ -7,13 +7,14 @@ using UnityEngine.SceneManagement;
 namespace LobbyFlow.Scenes
 {
     /// <summary>
-    /// 로비와 던전 사이 씬 전환. 전환은 한 번에 하나만 진행하고, 진행 중 요청은 무시한다.
+    /// Boot·로비·챕터 사이 씬 전환. 전환은 한 번에 하나만 진행하고, 진행 중 요청은 무시한다.
     /// 로딩 오버레이는 떠나는 씬이 소유하므로 그 씬이 언로드될 때 UIManager 가 함께 정리한다.
+    /// 챕터 씬 이름은 <see cref="Chapters.ChapterDefinition"/> 이 갖는다.
     /// </summary>
     public static class SceneFlow
     {
+        public const string Boot = "Boot";
         public const string Lobby = "Lobby";
-        public const string Dungeon = "Dungeon";
 
         public static bool IsLoading { get; private set; }
 
