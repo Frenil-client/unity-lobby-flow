@@ -1,0 +1,41 @@
+# 줄바꿈은 LF 로 고정한다 — Unity 가 LF 로 저장하므로 autocrlf 환경에서도 체크아웃을 LF 로 맞춘다
+* text=auto eol=lf
+
+# Code
+*.cs diff=csharp text
+*.asmdef text
+*.asmref text
+*.shader text
+*.hlsl text
+*.cginc text
+*.json text
+*.md text
+
+# Unity YAML (Force Text 직렬화)
+*.unity text
+*.prefab text
+*.asset text
+*.mat text
+*.anim text
+*.controller text
+*.overrideController text
+*.physicMaterial text
+*.meta text
+*.inputactions text
+
+# Binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.psd binary
+*.tga binary
+*.exr binary
+*.fbx binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.mp4 binary
+*.ttf binary
+*.otf binary
+*.dll binary
+*.so binary
