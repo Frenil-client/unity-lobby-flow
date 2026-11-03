@@ -1,6 +1,6 @@
+using TMPro;
 using UISystem;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace LobbyFlow.UI
 {
@@ -9,7 +9,7 @@ namespace LobbyFlow.UI
     {
         private const float DefaultSeconds = 2.5f;
 
-        [SerializeField] private Text _message;
+        [SerializeField] private TMP_Text _message;
 
         private float _closeAt;
 

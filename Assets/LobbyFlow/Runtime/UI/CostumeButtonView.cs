@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,7 +13,7 @@ namespace LobbyFlow.UI
 
         [SerializeField] private Button _button;
         [SerializeField] private Image _background;
-        [SerializeField] private Text _label;
+        [SerializeField] private TMP_Text _label;
         [SerializeField] private GameObject _seasonBadge;
 
         private Action _clicked;

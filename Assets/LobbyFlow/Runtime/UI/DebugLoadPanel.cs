@@ -3,6 +3,7 @@ using LobbyFlow.Content;
 using LobbyFlow.Loading;
 using LobbyFlow.Patching;
 using LobbyFlow.Scenes;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -27,7 +28,7 @@ namespace LobbyFlow.UI
         [SerializeField] private Button _patchFailButton;
         [SerializeField] private Button _clearCacheButton;
         [SerializeField] private Button _rebootButton;
-        [SerializeField] private Text _counters;
+        [SerializeField] private TMP_Text _counters;
 
         private string _shown;
 
@@ -102,7 +103,7 @@ namespace LobbyFlow.UI
             SetLabel(_clearCacheButton, "다운로드 캐시 삭제");
             SetLabel(_rebootButton, "Boot 다시 실행");
 
-            // 같은 값이면 Text 에 다시 쓰지 않아 매 프레임 메시 재생성을 막는다.
+            // 같은 값이면 TMP_Text 에 다시 쓰지 않아 매 프레임 메시 재생성을 막는다.
             var text = $"보유 리소스 {ResourceCounters.LiveAssets} · 인스턴스 {ResourceCounters.LiveInstances}\n" +
                        $"누적 로드 {ResourceCounters.TotalAcquired} · 늦은 결과 반환 {ResourceCounters.StaleReleased}";
             if (text != _shown)
@@ -114,7 +115,7 @@ namespace LobbyFlow.UI
 
         private static void SetLabel(Button button, string text)
         {
-            var label = button.GetComponentInChildren<Text>(true);
+            var label = button.GetComponentInChildren<TMP_Text>(true);
             if (label != null && label.text != text)
                 label.text = text;
         }

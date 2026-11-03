@@ -5,6 +5,7 @@ using LobbyFlow.Content;
 using LobbyFlow.Loading;
 using LobbyFlow.Patching;
 using LobbyFlow.Scenes;
+using TMPro;
 using UISystem;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,12 +22,12 @@ namespace LobbyFlow.UI
         [SerializeField] private CharacterSlotView _slotTemplate;
         [SerializeField] private RectTransform _chapterContainer;
         [SerializeField] private ChapterButtonView _chapterTemplate;
-        [SerializeField] private Text _selectedLabel;
+        [SerializeField] private TMP_Text _selectedLabel;
         [SerializeField] private Button _enterDungeonButton;
         [SerializeField] private GameObject _eventGroup;
         [SerializeField] private Image _eventBanner;
-        [SerializeField] private Text _eventTitle;
-        [SerializeField] private Text _eventBody;
+        [SerializeField] private TMP_Text _eventTitle;
+        [SerializeField] private TMP_Text _eventBody;
 
         private readonly List<CharacterSlotView> _slots = new();
         private readonly List<ChapterButtonView> _chapterButtons = new();

@@ -1,4 +1,5 @@
 using System.Threading;
+using TMPro;
 using UISystem;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,7 +9,7 @@ namespace LobbyFlow.UI
     /// <summary>재시도 또는 종료를 고르게 하는 오류 팝업. 뒤로가기와 Dim 클릭으로 닫히지 않는다.</summary>
     public sealed class ErrorPopup : UIPopup
     {
-        [SerializeField] private Text _message;
+        [SerializeField] private TMP_Text _message;
         [SerializeField] private Button _retryButton;
         [SerializeField] private Button _quitButton;
 
@@ -33,7 +34,7 @@ namespace LobbyFlow.UI
                 return false;
 
             popup._message.text = message;
-            popup._quitButton.GetComponentInChildren<Text>(true).text = declineLabel;
+            popup._quitButton.GetComponentInChildren<TMP_Text>(true).text = declineLabel;
             var result = await popup.WaitForCloseAsync();
             return result.IsConfirmed;
         }

@@ -3,9 +3,9 @@ using System.Threading;
 using LobbyFlow.Content;
 using LobbyFlow.Patching;
 using LobbyFlow.Scenes;
+using TMPro;
 using UISystem;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace LobbyFlow.UI
 {
@@ -17,7 +17,7 @@ namespace LobbyFlow.UI
     {
         private const float CompletedHoldSeconds = 0.4f;
 
-        [SerializeField] private Text _status;
+        [SerializeField] private TMP_Text _status;
 
         private long _downloadBytes;
 

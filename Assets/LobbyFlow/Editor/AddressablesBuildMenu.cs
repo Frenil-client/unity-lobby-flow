@@ -1,4 +1,5 @@
 using System.IO;
+using TMPro;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Build;
@@ -32,6 +33,8 @@ namespace LobbyFlow.Editor
             if (!CanBuild(settings))
                 return false;
 
+            ClearDynamicFontData();
+
             // 전체 빌드는 새 기준이다. 이전 빌드의 번들이 남아 있으면 서버 로그에서 받은 번들을 구분하기 어렵다.
             var remoteBuildPath = settings.RemoteCatalogBuildPath.GetValue(settings);
             if (Directory.Exists(remoteBuildPath))
@@ -55,6 +58,8 @@ namespace LobbyFlow.Editor
             var settings = AddressableAssetSettingsDefaultObject.Settings;
             if (!CanBuild(settings))
                 return false;
+
+            ClearDynamicFontData();
 
             var statePath = ContentUpdateScript.GetContentStateDataPath(false, settings);
             if (!File.Exists(statePath))
@@ -85,6 +90,34 @@ namespace LobbyFlow.Editor
 
             Debug.Log($"[LobbyFlow] 콘텐츠 업데이트 빌드 완료 ({result.Duration:0.0}초). 기준: {statePath}");
             return true;
+        }
+
+        [MenuItem("Lobby Flow/Addressables/폰트 동적 데이터 비우기")]
+        private static void ClearDynamicFontDataFromMenu() => ClearDynamicFontData();
+
+        /// <summary>
+        /// 동적 TMP 폰트 에셋의 글자와 아틀라스를 비운다. 에디터에서 플레이하면 쓴 글자가 아틀라스에 쌓여 에셋이 바뀌는데,
+        /// 그대로 빌드하면 내용이 같아도 로컬 폰트 번들 해시가 달라져 콘텐츠 업데이트가 정적 그룹 변경으로 본다.
+        /// 플레이어 빌드는 TMP 의 Clear Dynamic Data On Build 가 같은 일을 한다.
+        /// </summary>
+        public static void ClearDynamicFontData()
+        {
+            foreach (var guid in AssetDatabase.FindAssets("t:TMP_FontAsset", new[] { "Assets/LobbyFlowContent" }))
+            {
+                var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetDatabase.GUIDToAssetPath(guid));
+                if (fontAsset == null || fontAsset.atlasPopulationMode != AtlasPopulationMode.Dynamic)
+                    continue;
+
+                fontAsset.ClearFontAssetData(true);
+                EditorUtility.SetDirty(fontAsset);
+                foreach (var atlas in fontAsset.atlasTextures)
+                {
+                    if (atlas != null)
+                        EditorUtility.SetDirty(atlas);
+                }
+            }
+
+            AssetDatabase.SaveAssets();
         }
 
         private static bool CanBuild(AddressableAssetSettings settings)

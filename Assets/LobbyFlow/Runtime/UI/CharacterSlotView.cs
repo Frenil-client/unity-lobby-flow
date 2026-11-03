@@ -1,5 +1,6 @@
 using System;
 using LobbyFlow.Content;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,8 +12,8 @@ namespace LobbyFlow.UI
         [SerializeField] private Button _button;
         [SerializeField] private Image _swatch;
         [SerializeField] private Image _portrait;
-        [SerializeField] private Text _name;
-        [SerializeField] private Text _role;
+        [SerializeField] private TMP_Text _name;
+        [SerializeField] private TMP_Text _role;
         [SerializeField] private GameObject _selectedMark;
 
         private Action _clicked;

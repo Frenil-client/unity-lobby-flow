@@ -34,7 +34,7 @@
 |---|---|
 | Unity | 6000.3.9f1, URP |
 | 직렬화 | Force Text, Visible Meta Files |
-| UI | `com.frenil.uisystem` v0.3.1 (git URL, `Packages/manifest.json`) |
+| UI | `com.frenil.uisystem` v0.3.1 (git URL, `Packages/manifest.json`), 글자는 TextMeshPro(`com.unity.ugui` 2.0) |
 | 리소스 | Addressables 2.8.1 (`com.unity.addressables`) |
 | 원격 저장소 | Unity Cloud Content Delivery(CCD). Unity Cloud 프로젝트 연결 필요 |
 | 개발 PC | Windows 11 |
@@ -117,6 +117,7 @@ Assets/LobbyFlowContent/
 ├─ Local/                          앱 내장. 출시 후 변경 금지
 │  ├─ UI/              (2D)        캐릭터 초상, 챕터 아이콘
 │  ├─ Audio/                       로비 BGM
+│  ├─ Fonts/                       한글 TMP 동적 폰트 에셋(NanumGothic SDF)
 │  ├─ Characters/      (3D)
 │  │  ├─ Common/                   캐릭터 공용 머티리얼(피부)
 │  │  └─ knight/ ranger/ mage/     기본 캐릭터 프리팹·머티리얼
@@ -135,6 +136,7 @@ Assets/LobbyFlowContent/
 |---|---|---|
 | Local_UI | `Local/UI` (`UI`) | 함께 |
 | Local_Audio | `Local/Audio` (`Audio`) | 함께 |
+| Local_Fonts | `Local/Fonts` (`Fonts`) | 함께 |
 | Local_Characters | `Characters/Common`, `Characters/knight` … 캐릭터마다 하나 | 항목마다 |
 | Local_Chapter01 | `Local/Chapter01` (`Chapter01`) | 함께 |
 | Local_Data | `Local/Data` (`LocalData`) | 함께 |
@@ -148,6 +150,8 @@ Assets/LobbyFlowContent/
 - Boot 씬, 패치 팝업, 로딩 오버레이, UI 시스템 설정, 버튼음은 Addressables가 아니라 빌드 씬과 `Resources`(또는 그것이 직접 참조하는 에셋)에 둔다. 카탈로그를 받기 전에 필요하기 때문이다.
 - 로비 씬도 빌드 씬으로 둔다. 로비가 쓰는 리소스(초상, BGM, 배너)는 Addressables로 로드하고 로비 화면이 반환한다. 챕터 씬은 Addressables 씬이며 빌드 설정에 넣지 않는다.
 - 번들 안 일부만 반환해도 번들 전체가 내려가지 않으므로([7.3](#73-번들-단위-메모리)) 수명이 다른 것은 같은 번들에 넣지 않는다. 코스튬은 한 번들이라 하나만 써도 코스튬 번들 전체가 올라온다(데모 규모에서 허용).
+- 폰트는 로컬 그룹(`Local_Fonts`)에 둔다. Addressables가 아닌 폰트를 여러 씬 번들이 참조하면 번들마다 복사본이 들어간다. 실제로 v1에서 원본 TTF(직렬화 4.69MB)가 챕터 1·2·3 씬 번들에 각각 들어가, LZ4 압축 후 씬 번들 하나가 약 2.8MB로 챕터 다운로드 크기 대부분을 차지했다(빌드 리포트로 확인). 빌드 씬과 UI 프리팹도 같은 폰트를 쓰므로 플레이어 데이터와 로컬 번들에는 한 벌씩 들어간다(둘 다 앱 내장, 다운로드 없음).
+- 폰트 에셋은 동적 모드다. 실행 중 쓰는 글자만 아틀라스에 넣고, Addressables 빌드 메뉴와 플레이어 빌드 전에 비운다. 비우지 않으면 에디터 플레이로 쌓인 글자 때문에 로컬 폰트 번들 해시가 바뀌어 콘텐츠 업데이트가 정적 그룹 변경으로 본다.
 - 압축은 LZ4로 시작한다. 원격 번들의 다운로드 크기를 줄일 필요가 생기면 LZMA를 비교하고 결과를 기록한다.
 - 그룹과 라벨은 구현하면서 조정하고, 바뀌면 이 표를 갱신한다.
 

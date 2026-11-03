@@ -2,6 +2,7 @@ using LobbyFlow.Content;
 using LobbyFlow.Loading;
 using LobbyFlow.Preview;
 using LobbyFlow.Scenes;
+using TMPro;
 using UISystem;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,8 +17,8 @@ namespace LobbyFlow.UI
     {
         [SerializeField] private string _chapterId;
         [SerializeField] private Transform _spawnPoint;
-        [SerializeField] private Text _title;
-        [SerializeField] private Text _status;
+        [SerializeField] private TMP_Text _title;
+        [SerializeField] private TMP_Text _status;
         [SerializeField] private Button _retryButton;
         [SerializeField] private Button _returnButton;
 

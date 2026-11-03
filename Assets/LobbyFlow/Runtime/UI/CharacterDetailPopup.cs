@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LobbyFlow.Content;
 using LobbyFlow.Loading;
 using LobbyFlow.Preview;
+using TMPro;
 using UISystem;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,15 +20,15 @@ namespace LobbyFlow.UI
         private const string BaseCostumeLabel = "기본";
         private static readonly Vector3 StagePosition = new(0f, -500f, 0f);
 
-        [SerializeField] private Text _name;
-        [SerializeField] private Text _role;
-        [SerializeField] private Text _description;
+        [SerializeField] private TMP_Text _name;
+        [SerializeField] private TMP_Text _role;
+        [SerializeField] private TMP_Text _description;
         [SerializeField] private Image _themeBar;
         [SerializeField] private RawImage _preview;
         [SerializeField] private GameObject _loadingGroup;
         [SerializeField] private RectTransform _spinner;
         [SerializeField] private GameObject _errorGroup;
-        [SerializeField] private Text _errorText;
+        [SerializeField] private TMP_Text _errorText;
         [SerializeField] private Button _retryButton;
         [SerializeField] private Button _prevButton;
         [SerializeField] private Button _nextButton;

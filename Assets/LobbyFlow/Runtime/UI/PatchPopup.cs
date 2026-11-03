@@ -1,4 +1,5 @@
 using LobbyFlow.Patching;
+using TMPro;
 using UISystem;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,15 +12,15 @@ namespace LobbyFlow.UI
     /// </summary>
     public sealed class PatchPopup : UIPopup
     {
-        [SerializeField] private Text _title;
-        [SerializeField] private Text _message;
+        [SerializeField] private TMP_Text _title;
+        [SerializeField] private TMP_Text _message;
         [SerializeField] private GameObject _confirmGroup;
         [SerializeField] private Button _downloadButton;
         [SerializeField] private Button _quitButton;
         [SerializeField] private GameObject _progressGroup;
         [SerializeField] private RectTransform _progressFill;
-        [SerializeField] private Text _percent;
-        [SerializeField] private Text _bytes;
+        [SerializeField] private TMP_Text _percent;
+        [SerializeField] private TMP_Text _bytes;
 
         private AwaitableCompletionSource<bool> _choice;
 
@@ -37,7 +38,7 @@ namespace LobbyFlow.UI
         {
             _title.text = title;
             _message.text = message + (onCellular ? "\n모바일 데이터로 연결돼 있습니다." : string.Empty);
-            _quitButton.GetComponentInChildren<Text>(true).text = declineLabel;
+            _quitButton.GetComponentInChildren<TMP_Text>(true).text = declineLabel;
             _confirmGroup.SetActive(true);
             _progressGroup.SetActive(false);
 

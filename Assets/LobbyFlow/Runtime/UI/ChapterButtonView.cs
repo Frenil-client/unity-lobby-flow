@@ -1,5 +1,6 @@
 using System;
 using LobbyFlow.Content;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,7 +15,7 @@ namespace LobbyFlow.UI
         [SerializeField] private Button _button;
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
-        [SerializeField] private Text _name;
+        [SerializeField] private TMP_Text _name;
         [SerializeField] private GameObject _downloadTag;
 
         private Action _clicked;
