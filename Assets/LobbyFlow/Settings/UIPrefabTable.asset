@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fe716d3860efab479490a7561988b3c, type: 3}
+  m_Name: UIPrefabTable
+  m_EditorClassIdentifier: UISystem.Runtime::UISystem.UIPrefabTable
+  _entries:
+  - TypeName: LobbyFlow.UI.CharacterDetailPopup
+    Prefab: {fileID: 1710722978637315065, guid: 8192025ed9dd5e449914ad4592ecdae5, type: 3}
+  - TypeName: LobbyFlow.UI.LoadingOverlay
+    Prefab: {fileID: 4787981182921157511, guid: df65d8509f8cd944089cd8aa2a586102, type: 3}
