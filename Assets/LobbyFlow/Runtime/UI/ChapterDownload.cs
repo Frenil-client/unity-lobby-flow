@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using LobbyFlow.Content;
 using LobbyFlow.Patching;
@@ -13,6 +14,9 @@ namespace LobbyFlow.UI
     public static class ChapterDownload
     {
         private const float CompletedHoldSeconds = 0.3f;
+
+        /// <summary>챕터 콘텐츠를 다 받았다. 로비의 추가 다운로드 표시를 지우는 데 쓴다.</summary>
+        public static event Action<ChapterRecord> Downloaded;
 
         /// <summary>바로 들어가도 되면 true.</summary>
         public static async Awaitable<bool> EnsureAsync(ChapterRecord chapter)
@@ -67,6 +71,7 @@ namespace LobbyFlow.UI
             }
 
             LobbyLog.Info($"챕터 다운로드 완료 {chapter.Id}");
+            Downloaded?.Invoke(chapter);
             popup.ShowCompleted();
             await Awaitable.WaitForSecondsAsync(CompletedHoldSeconds);
             await manager.CloseAsync(popup);

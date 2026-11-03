@@ -63,7 +63,20 @@ namespace LobbyFlow.Editor
                 return false;
             }
 
-            var result = ContentUpdateScript.BuildContentUpdate(settings, statePath);
+            // Addressables 2.8.1 은 업데이트 빌드에서 빌드 리포트(Debug Build Layout)를 만들다 로컬 씬 번들을 두 번 넣어
+            // 예외를 낸다. 번들과 카탈로그 결과와는 무관한 리포트 단계라 업데이트 빌드 동안만 끈다.
+            var generateLayout = ProjectConfigData.GenerateBuildLayout;
+            ProjectConfigData.GenerateBuildLayout = false;
+            AddressablesPlayerBuildResult result;
+            try
+            {
+                result = ContentUpdateScript.BuildContentUpdate(settings, statePath);
+            }
+            finally
+            {
+                ProjectConfigData.GenerateBuildLayout = generateLayout;
+            }
+
             if (result == null || !string.IsNullOrEmpty(result.Error))
             {
                 Debug.LogError($"[LobbyFlow] 콘텐츠 업데이트 빌드 실패: {result?.Error}");

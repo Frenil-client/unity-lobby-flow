@@ -1,0 +1,67 @@
+using System.IO;
+using System.Linq;
+using UnityEditor;
+using UnityEditor.Build.Reporting;
+using UnityEngine;
+using UnityEngine.AddressableAssets;
+
+namespace LobbyFlow.Editor
+{
+    /// <summary>
+    /// 플레이어 빌드(SPEC 5.7). Addressables 콘텐츠는 빌드 메뉴로 따로 만들고, 플레이어에는 그때의 로컬 콘텐츠와 카탈로그가 들어간다.
+    /// 콘텐츠 업데이트 빌드도 로컬 카탈로그를 새로 쓰므로, 출시본을 흉내 내는 플레이어는 전체 빌드 직후 업데이트 전에 만든다.
+    /// </summary>
+    public static class PlayerBuildMenu
+    {
+        public const string OutputRoot = "Builds";
+
+        [MenuItem("Lobby Flow/플레이어 빌드/Windows 개발 빌드")]
+        private static void BuildWindowsFromMenu()
+        {
+            if (BuildWindowsDevelopment(out var path))
+                EditorUtility.RevealInFinder(path);
+        }
+
+        /// <returns>성공하면 true.</returns>
+        public static bool BuildWindowsDevelopment(out string path)
+        {
+            path = $"{OutputRoot}/Windows/LobbyFlow.exe";
+            return Build(BuildTarget.StandaloneWindows64, path, BuildOptions.Development);
+        }
+
+        private static bool Build(BuildTarget target, string path, BuildOptions options)
+        {
+            // 플랫폼 전환은 전체 재임포트를 부르므로 메뉴에서 하지 않는다. Jenkins 는 -buildTarget 으로 연다.
+            if (EditorUserBuildSettings.activeBuildTarget != target)
+            {
+                Debug.LogError($"[LobbyFlow] 현재 플랫폼({EditorUserBuildSettings.activeBuildTarget})이 {target} 이 아니다. 플랫폼을 바꾼 뒤 빌드한다.");
+                return false;
+            }
+
+            // 'Build Addressables on Player Build' 를 끄고 쓰므로, 빌드된 콘텐츠가 없으면 빈 플레이어가 나온다.
+            if (!File.Exists(Path.Combine(Addressables.BuildPath, "settings.json")))
+            {
+                Debug.LogError($"[LobbyFlow] Addressables 빌드 결과가 없다: {Addressables.BuildPath}. 전체 빌드를 먼저 한다.");
+                return false;
+            }
+
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
+                locationPathName = path,
+                target = target,
+                options = options,
+            });
+
+            var summary = report.summary;
+            if (summary.result != BuildResult.Succeeded)
+            {
+                Debug.LogError($"[LobbyFlow] 플레이어 빌드 실패({summary.result}): 오류 {summary.totalErrors}개");
+                return false;
+            }
+
+            Debug.Log($"[LobbyFlow] 플레이어 빌드 완료 ({summary.totalTime.TotalSeconds:0.0}초, {summary.totalSize / (1024f * 1024f):0.0}MB): {Path.GetFullPath(path)}");
+            return true;
+        }
+    }
+}

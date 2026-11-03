@@ -221,13 +221,15 @@ Assets/LobbyFlowContent/
 
 패치 테스트 절차:
 
-1. `main`에서 **Lobby Flow ▸ Addressables ▸ 전체 빌드** → 원격 번들 업로드(LocalServer는 **콘텐츠 서버 ▸ 시작**) → 플레이어 빌드. 생긴 `addressables_content_state.bin`을 `main`에 커밋한다.
+1. `main`에서 **Lobby Flow ▸ Addressables ▸ 전체 빌드** → 원격 번들 업로드(LocalServer는 **콘텐츠 서버 ▸ 시작**) → **Lobby Flow ▸ 플레이어 빌드 ▸ Windows 개발 빌드**. 생긴 `addressables_content_state.bin`을 `main`에 커밋한다.
 2. `git restore --source=content/v2 -- Assets/LobbyFlowContent/Remote`로 원격 폴더만 v2로 덮는다. 브랜치는 바꾸지 않는다.
 3. **Lobby Flow ▸ Addressables ▸ 콘텐츠 업데이트 빌드**(1번 기준 사용) → 업로드.
-4. 1번 플레이어를 켜서 패치 팝업의 받을 크기, 바뀐 코스튬·공지·챕터 2를 확인한다. 콘텐츠 서버 로그로 받은 번들을 확인한다.
+4. 1번 플레이어를 켜서 카탈로그 갱신, 패치 팝업의 받을 크기, 바뀐 코스튬·공지·챕터 2를 확인한다. 콘텐츠 서버 로그로 받은 번들을 확인한다.
 5. `git restore -- Assets/LobbyFlowContent/Remote`와 `git clean -fd -- Assets/LobbyFlowContent/Remote`로 v1으로 되돌린다.
 
-에디터에서 검증할 때는 Addressables Groups 창의 Play Mode Script를 **Use Existing Build**로 둔다. 기본값(Use Asset Database)은 빌드 결과와 원격 경로를 쓰지 않아 패치가 일어나지 않는다.
+v2 패치는 1번 플레이어로 검증한다. 콘텐츠 업데이트 빌드는 원격 카탈로그와 함께 로컬 카탈로그(`Library/com.unity.addressables/aa`)도 새로 쓰므로, 업데이트 뒤 에디터의 **Use Existing Build**는 이미 v2를 가진 앱처럼 동작해 카탈로그 갱신 단계가 일어나지 않는다. 같은 이유로 업데이트 뒤에 만든 플레이어는 출시본(v1)을 대신하지 못한다.
+에디터에서 v1 패치(첫 설치 다운로드)를 볼 때는 Play Mode Script를 **Use Existing Build**로 둔다. 기본값(Use Asset Database)은 빌드 결과와 원격 경로를 쓰지 않아 패치가 일어나지 않는다.
+플레이어 빌드는 Addressables를 다시 빌드하지 않는다(`Build Addressables on Player Build` 끔). 콘텐츠는 빌드 메뉴로만 만들어 업데이트 기준이 몰래 바뀌지 않게 한다. LocalServer는 http라 `Allow downloads over HTTP`는 개발 빌드에서만 허용한다.
 `content/v2`의 내용은 **Lobby Flow ▸ 원격 콘텐츠 v2 생성**으로 만든다. v1 대비 바뀌는 파일만 다시 만들며, 나머지 파일은 그대로 두어 불필요한 번들 변경이 생기지 않게 한다.
 
 규칙:
@@ -247,6 +249,8 @@ Assets/LobbyFlowContent/
 |---|---|---|
 | 게임 시작(Boot) | 바뀐 카탈로그, `patch_boot` 라벨 | 시즌 이벤트처럼 로비에서 바로 보이는 원격 콘텐츠 |
 | 챕터 진입 | `chapter02` / `chapter03` 라벨 | 들어가지 않는 챕터는 받지 않는다 |
+
+로비의 챕터 버튼은 라벨이 있는 챕터마다 남은 받을 크기를 확인해, 0보다 클 때만 "추가 다운로드" 표시를 켠다. 확인하는 동안은 끄고, 확인에 실패하면 받아야 하는 것으로 보고 켠다. 챕터 다운로드를 마치면 바로 끈다. v2 업데이트로 챕터 번들이 바뀌면 다시 켜진다.
 
 ### 6.2 Boot 시퀀스
 
@@ -426,7 +430,7 @@ Boot 씬 (빌드 내장)
 - 팝업 열기와 닫기, 씬 왕복을 각각 30회 이상 반복한 확인 기록.
 - Addressables Profiler에서 로드 후 증가하고 반환 후 감소하는 구간의 캡처 또는 영상.
 - 반복 전후 Memory Profiler 스냅샷 비교 결과.
-- 콘텐츠 업데이트 1회의 전후 기록(바뀐 번들, 받은 크기, 표시 결과).
+- 콘텐츠 업데이트 1회의 전후 기록(바뀐 번들, 받은 크기, 표시 결과). LocalServer 기록: `docs/records/2026-11-04-content-update-v2.md`. CCD로 다시 기록한다.
 - 기기, 빌드 설정, 그룹 구성, 캐시 정책, 네트워크 조건, 반복 조건을 적은 로딩 지연과 메모리 관측 결과.
 - 같은 조건의 수정 전후 결과(실제로 발견한 문제가 있을 때).
 - Jenkins 파이프라인 실행 기록 1건 이상과 단계별 결과.

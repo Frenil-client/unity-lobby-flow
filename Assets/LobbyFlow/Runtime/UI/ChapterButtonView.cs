@@ -25,9 +25,11 @@ namespace LobbyFlow.UI
         {
             _clicked = clicked;
             _name.text = chapter.Name;
-            _downloadTag.SetActive(chapter.RequiresDownload);
+            SetDownloadRequired(false); // 받을 크기는 로비 화면이 확인해 알려 준다
             SetIcon(null);
         }
+
+        public void SetDownloadRequired(bool required) => _downloadTag.SetActive(required);
 
         public void SetIcon(Sprite sprite)
         {

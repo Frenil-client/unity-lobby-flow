@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LobbyFlow.Audio;
 using LobbyFlow.Content;
 using LobbyFlow.Loading;
+using LobbyFlow.Patching;
 using LobbyFlow.Scenes;
 using UISystem;
 using UnityEngine;
@@ -72,6 +73,7 @@ namespace LobbyFlow.UI
 
         private void OnDestroy()
         {
+            ChapterDownload.Downloaded -= OnChapterDownloaded;
             AudioService.StopBgm(_bgm);
             _assets.Dispose();
         }
@@ -106,6 +108,50 @@ namespace LobbyFlow.UI
                 button.Bind(chapter, () => SelectChapter(chapter));
                 _chapterButtons.Add(button);
                 LoadInto<Sprite>(chapter.IconAddress, button.SetIcon);
+            }
+
+            ChapterDownload.Downloaded += OnChapterDownloaded;
+            RefreshDownloadTags();
+        }
+
+        /// <summary>
+        /// 원격 챕터마다 남은 받을 크기를 확인해, 받을 것이 있을 때만 추가 다운로드 표시를 켠다.
+        /// 크기를 확인하지 못하면 받아야 하는 것으로 보고 표시를 남긴다.
+        /// </summary>
+        private async void RefreshDownloadTags()
+        {
+            var cancellationToken = destroyCancellationToken;
+            for (var i = 0; i < _content.Chapters.Count; i++)
+            {
+                var chapter = _content.Chapters[i];
+                if (!chapter.RequiresDownload)
+                    continue;
+
+                bool required;
+                try
+                {
+                    required = await LobbyServices.PatchService.GetDownloadSizeAsync(chapter.DownloadLabel, cancellationToken) > 0;
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+                catch (PatchNetworkException e)
+                {
+                    LobbyLog.Warning($"챕터 받을 크기 확인 실패 {chapter.Id}: {e.Message}");
+                    required = true;
+                }
+
+                _chapterButtons[i].SetDownloadRequired(required);
+            }
+        }
+
+        private void OnChapterDownloaded(ChapterRecord chapter)
+        {
+            for (var i = 0; i < _chapterButtons.Count; i++)
+            {
+                if (_content.Chapters[i] == chapter)
+                    _chapterButtons[i].SetDownloadRequired(false);
             }
         }
 
