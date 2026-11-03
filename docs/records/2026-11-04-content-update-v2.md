@@ -63,3 +63,26 @@ TextMeshPro 전환과 함께 동적 SDF 폰트 에셋을 `Local_Fonts` 그룹에
 | 챕터 3 진입 | 2,961,648 B | 144,637 B |
 
 Windows 개발 빌드는 166.2MB에서 168.2MB가 됐다. 빌드 씬과 UI 프리팹이 쓰는 폰트 에셋이 플레이어 데이터에도 한 벌 들어가기 때문이다. 폰트 에셋은 빌드 직전에 동적 데이터를 비워 아틀라스 1×1, 27KB 상태로 저장됐다.
+
+## 후속 2: TMP 기준 v1 → v2 재검증
+
+기준은 `main` `d824a18`(TMP 전환과 빌드 정리 뒤 v1), v2는 `content/v2` `b749cde`. 플레이어는 같은 기준으로 다시 만든 Windows 개발 빌드이고, 실행 전 v1 시작 패치와 챕터 2를 받아 둔 상태였다.
+
+| 그룹 | 번들 | v1 | v2 |
+|---|---|---|---|
+| Remote_Data | `remote_data_assets_all` | `a2c1bb8d…` 1,483 B | `bcde791b…` 1,547 B |
+| Remote_Season | `remote_season_assets_costumes` | `7b9aba53…` 59,914 B | `a3b7ed01…` 61,464 B |
+| Remote_Season | `remote_season_assets_event` | `dfd4e2f2…` 6,714 B | `83cd7c67…` 7,056 B |
+| Remote_Chapter02 | `remote_chapter02_scenes_all` | `43a991e8…` 23,453 B | `f658fb38…` 23,731 B |
+| Remote_Chapter02 | `remote_chapter02_assets_all` | `e43be54c…` 55,232 B | `3ba338ef…` 55,227 B |
+| Remote_Chapter03, Local_* (Local_Fonts 포함) | — | 같음 | 같음 |
+
+| 구간 | 결과 |
+|---|---|
+| Boot | `갱신 True, 받을 크기 0.1MB`. 실제로 받은 것은 카탈로그(41,398 B)와 costumes(61,464 B) |
+| 데이터 | 코스튬 3 → 4. 엠버 메이지 상세에서 봄 축제 코스튬 표시 |
+| 챕터 2 | 실제로 받은 것은 `remote_chapter02_scenes_all`(23,731 B) |
+| 챕터 3, 로컬 폰트 | 요청 없음 |
+| 업데이트 빌드 | 빌드 리포트 예외 없음, 기준 파일 변화 없음 |
+
+v2 변경 번들의 합은 시작 70,067 B, 챕터 2 78,958 B다. 실제로 받은 양이 이보다 적은 것은 data, event, chapter02 assets 번들이 앞선 v2 검증(TMP 전 기준) 때와 해시가 같아 캐시에 이미 있었기 때문이다. 내용이 같은 번들은 빌드를 다시 해도 이름(해시)이 같고, 캐시에 있으면 다시 받지 않는다.
