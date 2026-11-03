@@ -11,15 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/LobbyFlow/Scenes/Lobby.unity
     guid: 8ca047229cbd0144897f47dcce1db170
-  - enabled: 1
-    path: Assets/LobbyFlow/Scenes/Chapter01.unity
-    guid: ca72c7a1a5f145348856496cc29c6568
-  - enabled: 1
-    path: Assets/LobbyFlow/Scenes/Chapter02.unity
-    guid: b0c206903a7abd24db2d9ad656231009
-  - enabled: 1
-    path: Assets/LobbyFlow/Scenes/Chapter03.unity
-    guid: e8dba2cb9da9100458b9338b75299306
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 3d48a1b906fbe5f4b9784810db5f7731, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

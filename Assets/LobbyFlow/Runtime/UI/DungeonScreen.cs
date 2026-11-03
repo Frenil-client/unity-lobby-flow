@@ -1,10 +1,9 @@
-using LobbyFlow.Chapters;
-using LobbyFlow.Characters;
+using LobbyFlow.Content;
+using LobbyFlow.Loading;
 using LobbyFlow.Preview;
 using LobbyFlow.Scenes;
 using UISystem;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace LobbyFlow.UI
@@ -15,8 +14,7 @@ namespace LobbyFlow.UI
     /// </summary>
     public sealed class DungeonScreen : UIScreen
     {
-        [SerializeField] private CharacterCatalog _catalog;
-        [SerializeField] private ChapterCatalog _chapters;
+        [SerializeField] private string _chapterId;
         [SerializeField] private Transform _spawnPoint;
         [SerializeField] private Text _title;
         [SerializeField] private Text _status;
@@ -29,27 +27,42 @@ namespace LobbyFlow.UI
         {
             _returnButton.onClick.AddListener(ReturnToLobby);
             _retryButton.onClick.AddListener(() => _presenter?.Retry());
+            _retryButton.gameObject.SetActive(false);
+            _status.text = string.Empty;
+        }
 
-            var chapter = _chapters.FindByScene(gameObject.scene.name);
-            var chapterName = chapter != null ? chapter.DisplayName : "던전";
-
-            if (_catalog.Count == 0)
+        private async void Start()
+        {
+            ContentTables content;
+            try
             {
-                _title.text = chapterName;
-                _status.text = "캐릭터 목록이 비어 있습니다.";
-                _retryButton.gameObject.SetActive(false);
+                content = await LobbyServices.EnsureContentAsync();
+            }
+            catch (ContentDataException e)
+            {
+                LobbyLog.Error($"던전 데이터 오류: {e.Message}");
+                _status.text = "게임 데이터를 읽지 못했습니다.";
                 return;
             }
 
-            var character = _catalog[Mathf.Max(0, _catalog.IndexOf(LobbyServices.SelectedCharacterId))];
-            var costume = character.FindCostume(LobbyServices.SelectedCostumeId);
+            // 기다리는 동안 씬을 떠났으면 이 화면은 이미 파괴됐다.
+            if (this == null)
+                return;
+
+            var chapter = content.FindChapter(_chapterId);
+            var chapterName = chapter != null ? chapter.Name : "던전";
+            var character = content.FindCharacter(LobbyServices.SelectedCharacterId) ?? content.Characters[0];
+            var costume = content.FindCostume(LobbyServices.SelectedCostumeId);
+            if (costume != null && costume.CharacterId != character.Id)
+                costume = null;
+
             _title.text = costume != null
-                ? $"{chapterName} · {character.DisplayName} ({costume.DisplayName})"
-                : $"{chapterName} · {character.DisplayName}";
+                ? $"{chapterName} · {character.Name} ({costume.Name})"
+                : $"{chapterName} · {character.Name}";
 
             _presenter = new CharacterPreviewPresenter(LobbyServices.PreviewLoader, _spawnPoint, "Dungeon");
             _presenter.StateChanged += RefreshState;
-            _presenter.Show(character.ResolvePreview(costume?.Id));
+            _presenter.Show(costume != null ? costume : (IPreviewSource)character);
         }
 
         private void Update()

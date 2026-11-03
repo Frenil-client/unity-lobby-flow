@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using LobbyFlow.Audio;
-using LobbyFlow.Chapters;
-using LobbyFlow.Characters;
+using LobbyFlow.Content;
+using LobbyFlow.Loading;
 using LobbyFlow.Scenes;
 using UISystem;
 using UnityEngine;
@@ -10,62 +10,137 @@ using UnityEngine.UI;
 
 namespace LobbyFlow.UI
 {
-    /// <summary>로비 주 화면. 캐릭터 목록에서 상세 팝업을 열고, 고른 챕터에 선택한 캐릭터로 들어간다.</summary>
+    /// <summary>
+    /// 로비 주 화면. 캐릭터 목록에서 상세 팝업을 열고, 고른 챕터에 선택한 캐릭터로 들어간다.
+    /// 초상·챕터 아이콘·BGM·이벤트 배너는 이 화면이 Addressables 로 로드해 소유하고, 화면이 사라질 때 반환한다(SPEC 7.2).
+    /// </summary>
     public sealed class LobbyScreen : UIScreen
     {
-        [SerializeField] private CharacterCatalog _catalog;
         [SerializeField] private RectTransform _slotContainer;
         [SerializeField] private CharacterSlotView _slotTemplate;
-        [SerializeField] private ChapterCatalog _chapters;
         [SerializeField] private RectTransform _chapterContainer;
         [SerializeField] private ChapterButtonView _chapterTemplate;
         [SerializeField] private Text _selectedLabel;
         [SerializeField] private Button _enterDungeonButton;
-        [SerializeField] private AudioClip _bgm;
+        [SerializeField] private GameObject _eventGroup;
+        [SerializeField] private Image _eventBanner;
+        [SerializeField] private Text _eventTitle;
+        [SerializeField] private Text _eventBody;
 
         private readonly List<CharacterSlotView> _slots = new();
         private readonly List<ChapterButtonView> _chapterButtons = new();
+        private AssetHandleSet _assets;
+        private ContentTables _content;
+        private AudioClip _bgm;
         private bool _openingDetail;
 
         private void Awake()
         {
+            _assets = new AssetHandleSet("Lobby");
             _slotTemplate.gameObject.SetActive(false);
-            for (var i = 0; i < _catalog.Count; i++)
-            {
-                var index = i;
-                var slot = Instantiate(_slotTemplate, _slotContainer, false);
-                slot.gameObject.SetActive(true);
-                slot.Bind(_catalog[i], () => OpenDetail(index));
-                _slots.Add(slot);
-            }
-
             _chapterTemplate.gameObject.SetActive(false);
-            for (var i = 0; i < _chapters.Count; i++)
+            _eventGroup.SetActive(false);
+            _selectedLabel.text = string.Empty;
+            _enterDungeonButton.onClick.AddListener(EnterChapter);
+        }
+
+        private async void Start()
+        {
+            MessageToast.Show(LobbyServices.ConsumeNotice());
+
+            try
             {
-                var chapter = _chapters[i];
-                var button = Instantiate(_chapterTemplate, _chapterContainer, false);
-                button.gameObject.SetActive(true);
-                button.Bind(chapter, () => SelectChapter(chapter));
-                _chapterButtons.Add(button);
+                _content = await LobbyServices.EnsureContentAsync();
+            }
+            catch (ContentDataException e)
+            {
+                LobbyLog.Error($"로비 데이터 오류: {e.Message}");
+                MessageToast.Show("게임 데이터를 읽지 못했습니다.");
+                return;
             }
 
-            _enterDungeonButton.onClick.AddListener(EnterChapter);
+            // 기다리는 동안 씬을 떠났으면 이 화면은 이미 파괴됐다.
+            if (this == null)
+                return;
+
+            BuildSlots();
+            BuildChapters();
+            ShowEventNotice();
             RefreshSelection();
+            LoadBgm();
         }
 
-        private void Start()
+        private void OnDestroy()
         {
-            AudioService.PlayBgm(_bgm);
-            MessageToast.Show(LobbyServices.ConsumeNotice());
+            AudioService.StopBgm(_bgm);
+            _assets.Dispose();
         }
-
-        private void OnDestroy() => AudioService.StopBgm(_bgm);
 
         private void Update()
         {
             // 열린 팝업이 있으면 그것을 닫고, 화면만 남았으면 아무것도 하지 않는다.
             if (BackKey.WasPressedThisFrame())
                 UIManager.Instance?.OnBackPressed();
+        }
+
+        private void BuildSlots()
+        {
+            for (var i = 0; i < _content.Characters.Count; i++)
+            {
+                var index = i;
+                var character = _content.Characters[i];
+                var slot = Instantiate(_slotTemplate, _slotContainer, false);
+                slot.gameObject.SetActive(true);
+                slot.Bind(character, () => OpenDetail(index));
+                _slots.Add(slot);
+                LoadInto<Sprite>(character.PortraitAddress, slot.SetPortrait);
+            }
+        }
+
+        private void BuildChapters()
+        {
+            foreach (var chapter in _content.Chapters)
+            {
+                var button = Instantiate(_chapterTemplate, _chapterContainer, false);
+                button.gameObject.SetActive(true);
+                button.Bind(chapter, () => SelectChapter(chapter));
+                _chapterButtons.Add(button);
+                LoadInto<Sprite>(chapter.IconAddress, button.SetIcon);
+            }
+        }
+
+        private void ShowEventNotice()
+        {
+            var notice = _content.Notice;
+            if (notice.IsEmpty)
+                return;
+
+            _eventGroup.SetActive(true);
+            _eventTitle.text = notice.Title;
+            _eventBody.text = notice.Body;
+            LoadInto<Sprite>(ContentAddresses.EventBanner, sprite =>
+            {
+                _eventBanner.sprite = sprite;
+                _eventBanner.enabled = sprite != null;
+            });
+        }
+
+        private async void LoadBgm()
+        {
+            var clip = await _assets.LoadAsync<AudioClip>(ContentAddresses.LobbyBgm);
+            if (clip == null || this == null)
+                return;
+
+            _bgm = clip;
+            AudioService.PlayBgm(clip);
+        }
+
+        /// <summary>리소스를 로드해 넣는다. 화면이 먼저 사라지면 결과는 null 이 되고 넣지 않는다.</summary>
+        private async void LoadInto<T>(string address, Action<T> apply) where T : UnityEngine.Object
+        {
+            var asset = await _assets.LoadAsync<T>(address);
+            if (asset != null && this != null)
+                apply(asset);
         }
 
         private async void OpenDetail(int index)
@@ -93,7 +168,7 @@ namespace LobbyFlow.UI
             if (popup == null)
                 return;
 
-            popup.Bind(_catalog, index, EnterChapter);
+            popup.Bind(_content, index, EnterChapter);
             await popup.WaitForCloseAsync();
 
             // 팝업이 열린 사이 씬을 떠났으면 이 화면은 이미 파괴됐다.
@@ -101,7 +176,7 @@ namespace LobbyFlow.UI
                 RefreshSelection();
         }
 
-        private void SelectChapter(ChapterDefinition chapter)
+        private void SelectChapter(ChapterRecord chapter)
         {
             LobbyServices.SelectedChapterId = chapter.Id;
             RefreshSelection();
@@ -109,35 +184,33 @@ namespace LobbyFlow.UI
 
         private void EnterChapter()
         {
-            if (_chapters.Count == 0)
+            if (_content == null)
                 return;
 
-            SceneFlow.Load(SelectedChapter().SceneName);
+            SceneFlow.EnterChapter(SelectedChapter());
         }
 
-        private ChapterDefinition SelectedChapter() => _chapters[Mathf.Max(0, _chapters.IndexOf(LobbyServices.SelectedChapterId))];
+        private ChapterRecord SelectedChapter() => _content.FindChapter(LobbyServices.SelectedChapterId) ?? _content.Chapters[0];
+
+        private CharacterRecord SelectedCharacter() => _content.FindCharacter(LobbyServices.SelectedCharacterId) ?? _content.Characters[0];
 
         private void RefreshSelection()
         {
-            var selected = Mathf.Max(0, _catalog.IndexOf(LobbyServices.SelectedCharacterId));
-            for (var i = 0; i < _slots.Count; i++)
-                _slots[i].SetSelected(i == selected);
-
-            var chapterIndex = Mathf.Max(0, _chapters.IndexOf(LobbyServices.SelectedChapterId));
-            for (var i = 0; i < _chapterButtons.Count; i++)
-                _chapterButtons[i].SetSelected(i == chapterIndex);
-
-            if (_catalog.Count == 0)
-            {
-                _selectedLabel.text = "캐릭터 없음";
+            if (_content == null)
                 return;
-            }
 
-            var character = _catalog[selected];
-            var costume = character.FindCostume(LobbyServices.SelectedCostumeId);
-            _selectedLabel.text = costume != null
-                ? $"출전: {character.DisplayName} ({costume.DisplayName})"
-                : $"출전: {character.DisplayName}";
+            var character = SelectedCharacter();
+            for (var i = 0; i < _slots.Count; i++)
+                _slots[i].SetSelected(_content.Characters[i] == character);
+
+            var chapter = SelectedChapter();
+            for (var i = 0; i < _chapterButtons.Count; i++)
+                _chapterButtons[i].SetSelected(_content.Chapters[i] == chapter);
+
+            var costume = _content.FindCostume(LobbyServices.SelectedCostumeId);
+            _selectedLabel.text = costume != null && costume.CharacterId == character.Id
+                ? $"출전: {character.Name} ({costume.Name})"
+                : $"출전: {character.Name}";
         }
     }
 }

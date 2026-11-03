@@ -1,67 +1,89 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
+using LobbyFlow.Content;
 using UnityEngine;
 
 namespace LobbyFlow.Patching
 {
     /// <summary>
-    /// Addressables 도입 전 Boot 화면 흐름 검증용 모의 패치. 실제 네트워크를 쓰지 않는다.
-    /// 받은 양은 앱이 켜져 있는 동안 유지해, 끊긴 뒤 재시도가 이어 받는 동작을 흉내 낸다.
+    /// 화면 흐름 검증용 모의 패치. 실제 네트워크를 쓰지 않는다. 오프라인·끊김처럼 실제로 만들기 번거로운 경로를 재현한다.
+    /// 라벨마다 받은 양을 앱이 켜져 있는 동안 유지해, 끊긴 뒤 재시도가 이어 받는 동작을 흉내 낸다.
     /// </summary>
     public sealed class SimulatedPatchService : IPatchService
     {
         private const float CheckSeconds = 0.6f;
 
-        private long _downloadedBytes;
-        private bool _completed;
+        private readonly Dictionary<string, long> _downloaded = new();
 
-        public bool HasCachedContent => PatchSimulationSettings.Mode != PatchSimulationMode.OfflineFirstRun;
+        public async Awaitable<bool> HasCachedContentAsync(CancellationToken cancellationToken)
+        {
+            await Awaitable.NextFrameAsync(cancellationToken);
+            return PatchSimulationSettings.Mode != PatchSimulationMode.OfflineFirstRun;
+        }
 
         public async Awaitable<PatchCheckResult> CheckAsync(CancellationToken cancellationToken)
         {
             await Awaitable.WaitForSecondsAsync(CheckSeconds, cancellationToken);
+            ThrowIfOffline();
 
-            switch (PatchSimulationSettings.Mode)
-            {
-                case PatchSimulationMode.OfflineWithCache:
-                case PatchSimulationMode.OfflineFirstRun:
-                    throw new PatchNetworkException("모의: 서버에 연결할 수 없다", injected: true);
-                case PatchSimulationMode.UpToDate:
-                    return new PatchCheckResult(0);
-                default:
-                    return new PatchCheckResult(_completed ? 0 : PatchSimulationSettings.PatchBytes - _downloadedBytes);
-            }
+            if (PatchSimulationSettings.Mode == PatchSimulationMode.UpToDate)
+                return new PatchCheckResult(0, false);
+
+            return new PatchCheckResult(Remaining(ContentAddresses.PatchBootLabel), true);
         }
 
-        public async Awaitable DownloadAsync(Action<DownloadProgress> progress, CancellationToken cancellationToken)
+        public async Awaitable<long> GetDownloadSizeAsync(string label, CancellationToken cancellationToken)
         {
-            var total = PatchSimulationSettings.PatchBytes;
-            var failAt = PatchSimulationSettings.FailDownloadOnce ? total / 2 : long.MaxValue;
-            progress?.Invoke(new DownloadProgress(_downloadedBytes, total));
+            await Awaitable.NextFrameAsync(cancellationToken);
+            ThrowIfOffline();
+            return PatchSimulationSettings.Mode == PatchSimulationMode.UpToDate ? 0 : Remaining(label);
+        }
 
-            while (_downloadedBytes < total)
+        public async Awaitable DownloadAsync(string label, Action<DownloadProgress> progress, CancellationToken cancellationToken)
+        {
+            var total = TotalBytes(label);
+            var failAt = PatchSimulationSettings.FailDownloadOnce ? total / 2 : long.MaxValue;
+            _downloaded.TryGetValue(label, out var done);
+            progress?.Invoke(new DownloadProgress(done, total));
+
+            while (done < total)
             {
                 await Awaitable.NextFrameAsync(cancellationToken);
 
                 var step = (long)(PatchSimulationSettings.BytesPerSecond * Time.unscaledDeltaTime);
-                _downloadedBytes = Math.Min(total, _downloadedBytes + Math.Max(1, step));
+                done = Math.Min(total, done + Math.Max(1, step));
+                _downloaded[label] = done;
 
-                if (_downloadedBytes >= failAt)
+                if (done >= failAt)
                 {
                     PatchSimulationSettings.FailDownloadOnce = false;
                     throw new PatchNetworkException("모의: 다운로드가 끊겼다", injected: true);
                 }
 
-                progress?.Invoke(new DownloadProgress(_downloadedBytes, total));
+                progress?.Invoke(new DownloadProgress(done, total));
             }
-
-            _completed = true;
         }
 
-        public void ClearCache()
+        public void ClearCache(IEnumerable<string> labels)
         {
-            _downloadedBytes = 0;
-            _completed = false;
+            foreach (var label in labels)
+                _downloaded.Remove(label);
+        }
+
+        private static void ThrowIfOffline()
+        {
+            if (PatchSimulationSettings.Mode is PatchSimulationMode.OfflineWithCache or PatchSimulationMode.OfflineFirstRun)
+                throw new PatchNetworkException("모의: 서버에 연결할 수 없다", injected: true);
+        }
+
+        private static long TotalBytes(string label) =>
+            label == ContentAddresses.PatchBootLabel ? PatchSimulationSettings.PatchBytes : PatchSimulationSettings.ChapterBytes;
+
+        private long Remaining(string label)
+        {
+            _downloaded.TryGetValue(label, out var done);
+            return TotalBytes(label) - done;
         }
     }
 }

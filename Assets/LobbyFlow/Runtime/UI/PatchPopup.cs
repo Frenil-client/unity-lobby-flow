@@ -31,12 +31,13 @@ namespace LobbyFlow.UI
             _quitButton.onClick.AddListener(() => Choose(false));
         }
 
-        /// <summary>받을 크기를 보여 주고 다운로드·종료 선택을 기다린다. 다운로드를 고르면 true.</summary>
-        public Awaitable<bool> AskDownloadAsync(long bytes, bool onCellular)
+        /// <summary>받을 크기 안내를 보여 주고 다운로드·거절 선택을 기다린다. 다운로드를 고르면 true.</summary>
+        /// <param name="declineLabel">거절 버튼 문구. Boot 는 종료, 챕터 진입은 취소다.</param>
+        public Awaitable<bool> AskDownloadAsync(string title, string message, string declineLabel, bool onCellular)
         {
-            _title.text = "업데이트";
-            _message.text = $"추가 콘텐츠 {ByteFormat.ToMegabytes(bytes)}를 받아야 합니다." +
-                            (onCellular ? "\n모바일 데이터로 연결돼 있습니다." : string.Empty);
+            _title.text = title;
+            _message.text = message + (onCellular ? "\n모바일 데이터로 연결돼 있습니다." : string.Empty);
+            _quitButton.GetComponentInChildren<Text>(true).text = declineLabel;
             _confirmGroup.SetActive(true);
             _progressGroup.SetActive(false);
 

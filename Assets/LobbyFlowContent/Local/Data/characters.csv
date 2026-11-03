@@ -1,0 +1,4 @@
+id,name,role,description,color,portrait,prefab
+knight,아이언 나이트,탱커,두꺼운 갑옷으로 아군을 지키는 전열 수호자.,#5C8CD9,UI/portrait_knight.png,Characters/knight/Character_knight.prefab
+ranger,윈드 레인저,원거리 딜러,바람을 읽어 먼 거리의 적을 정확히 꿰뚫는 사수.,#59BF73,UI/portrait_ranger.png,Characters/ranger/Character_ranger.prefab
+mage,엠버 메이지,마법 딜러,불꽃 마법으로 넓은 범위를 제압하는 마법사.,#E6734C,UI/portrait_mage.png,Characters/mage/Character_mage.prefab

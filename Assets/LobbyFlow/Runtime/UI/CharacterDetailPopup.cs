@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using LobbyFlow.Characters;
+using LobbyFlow.Content;
+using LobbyFlow.Loading;
 using LobbyFlow.Preview;
 using UISystem;
 using UnityEngine;
@@ -37,11 +38,11 @@ namespace LobbyFlow.UI
         [SerializeField] private Button _departButton;
 
         private readonly List<CostumeButtonView> _costumeButtons = new();
-        private readonly List<string> _costumeButtonIds = new(); // 기본 모습은 null
-        private CharacterCatalog _catalog;
+        private readonly List<CostumeRecord> _costumeButtonRecords = new(); // 기본 모습은 null
+        private ContentTables _content;
         private Action _depart;
         private int _index;
-        private string _costumeId;
+        private CostumeRecord _costume;
         private PreviewStage _stage;
         private CharacterPreviewPresenter _presenter;
 
@@ -63,17 +64,17 @@ namespace LobbyFlow.UI
         }
 
         /// <summary>
-        /// 열린 직후 한 번 부른다. 표시할 캐릭터 목록과 시작 위치, 출발 버튼이 할 일을 받는다.
+        /// 열린 직후 한 번 부른다. 데이터와 시작 위치, 출발 버튼이 할 일을 받는다.
         /// 출발은 팝업을 닫지 않고 씬을 떠나므로 미리보기 로딩 중 씬 이탈 경로를 그대로 탄다.
         /// </summary>
-        public void Bind(CharacterCatalog catalog, int index, Action depart)
+        public void Bind(ContentTables content, int index, Action depart)
         {
-            if (!IsOpen || catalog == null || catalog.Count == 0)
+            if (!IsOpen || content == null || content.Characters.Count == 0)
                 return;
 
-            _catalog = catalog;
+            _content = content;
             _depart = depart;
-            _index = Mathf.Clamp(index, 0, catalog.Count - 1);
+            _index = Mathf.Clamp(index, 0, content.Characters.Count - 1);
             EnsurePreview();
             ShowCharacter();
         }
@@ -81,6 +82,8 @@ namespace LobbyFlow.UI
         protected override void OnClosing(UIResult result) => Teardown();
 
         private void OnDestroy() => Teardown();
+
+        private CharacterRecord CurrentCharacter => _content.Characters[_index];
 
         private void EnsurePreview()
         {
@@ -111,63 +114,58 @@ namespace LobbyFlow.UI
 
         private void Step(int delta)
         {
-            if (_catalog == null)
+            if (_content == null)
                 return;
 
-            _index = (_index + delta + _catalog.Count) % _catalog.Count;
+            var count = _content.Characters.Count;
+            _index = (_index + delta + count) % count;
             ShowCharacter();
         }
 
         private void ShowCharacter()
         {
-            var character = _catalog[_index];
-            _name.text = character.DisplayName;
+            var character = CurrentCharacter;
+            _name.text = character.Name;
             _role.text = character.Role;
             _description.text = character.Description;
             _themeBar.color = character.ThemeColor;
 
             // 출전 중인 캐릭터면 입고 있는 코스튬으로, 아니면 기본 모습으로 시작한다.
-            _costumeId = character.Id == LobbyServices.SelectedCharacterId && character.FindCostume(LobbyServices.SelectedCostumeId) != null
-                ? LobbyServices.SelectedCostumeId
-                : null;
+            var selected = _content.FindCostume(LobbyServices.SelectedCostumeId);
+            var startCostume = character.Id == LobbyServices.SelectedCharacterId && selected?.CharacterId == character.Id ? selected : null;
 
             RebuildCostumeButtons(character);
-            ShowCostume(_costumeId);
+            ShowCostume(startCostume);
         }
 
-        private void RebuildCostumeButtons(CharacterDefinition character)
+        private void RebuildCostumeButtons(CharacterRecord character)
         {
             foreach (var button in _costumeButtons)
                 Destroy(button.gameObject);
             _costumeButtons.Clear();
-            _costumeButtonIds.Clear();
+            _costumeButtonRecords.Clear();
 
             AddCostumeButton(BaseCostumeLabel, false, null);
-            foreach (var costume in character.Costumes)
-            {
-                if (costume != null)
-                    AddCostumeButton(costume.DisplayName, costume.IsSeasonal, costume.Id);
-            }
+            foreach (var costume in _content.CostumesOf(character.Id))
+                AddCostumeButton(costume.Name, costume.Seasonal, costume);
         }
 
-        private void AddCostumeButton(string label, bool seasonal, string costumeId)
+        private void AddCostumeButton(string label, bool seasonal, CostumeRecord costume)
         {
             var button = Instantiate(_costumeTemplate, _costumeContainer, false);
             button.gameObject.SetActive(true);
-            button.Bind(label, seasonal, () => ShowCostume(costumeId));
+            button.Bind(label, seasonal, () => ShowCostume(costume));
             _costumeButtons.Add(button);
-            _costumeButtonIds.Add(costumeId);
+            _costumeButtonRecords.Add(costume);
         }
 
-        private void ShowCostume(string costumeId)
+        private void ShowCostume(CostumeRecord costume)
         {
-            var character = _catalog[_index];
-            _costumeId = character.FindCostume(costumeId)?.Id;
-
+            _costume = costume;
             for (var i = 0; i < _costumeButtons.Count; i++)
-                _costumeButtons[i].SetSelected(_costumeButtonIds[i] == _costumeId);
+                _costumeButtons[i].SetSelected(_costumeButtonRecords[i] == costume);
 
-            _presenter.Show(character.ResolvePreview(_costumeId));
+            _presenter.Show(costume != null ? costume : (IPreviewSource)CurrentCharacter);
         }
 
         private void RefreshState()
@@ -183,13 +181,13 @@ namespace LobbyFlow.UI
 
         private void SaveSelection()
         {
-            LobbyServices.SelectedCharacterId = _catalog[_index].Id;
-            LobbyServices.SelectedCostumeId = _costumeId;
+            LobbyServices.SelectedCharacterId = CurrentCharacter.Id;
+            LobbyServices.SelectedCostumeId = _costume?.Id;
         }
 
         private void SelectAndClose()
         {
-            if (_catalog == null)
+            if (_content == null)
                 return;
 
             SaveSelection();
@@ -198,7 +196,7 @@ namespace LobbyFlow.UI
 
         private void SelectAndDepart()
         {
-            if (_catalog == null)
+            if (_content == null)
                 return;
 
             SaveSelection();

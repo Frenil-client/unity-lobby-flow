@@ -35,7 +35,7 @@
 | Unity | 6000.3.9f1, URP |
 | 직렬화 | Force Text, Visible Meta Files |
 | UI | `com.frenil.uisystem` v0.3.1 (git URL, `Packages/manifest.json`) |
-| 리소스 | Addressables 2.x (설치 시 정확한 버전을 기록) |
+| 리소스 | Addressables 2.8.1 (`com.unity.addressables`) |
 | 원격 저장소 | Unity Cloud Content Delivery(CCD). Unity Cloud 프로젝트 연결 필요 |
 | 개발 PC | Windows 11 |
 | Android 검증 | 보유 Android 기기 |
@@ -108,20 +108,46 @@ UI는 `com.frenil.uisystem`의 `UIScreen`/`UIPopup`과 `OpenAsync<T>()`를 사�
 판단이 애매하면 "이게 없으면 로비까지 갈 수 있나"로 정한다. 갈 수 없으면 로컬이다.
 로컬 그룹의 에셋을 출시 후 바꾸면 콘텐츠 업데이트 제한 검사에 걸린다. 그런 변경은 앱 업데이트로 처리하고, 원격으로 옮기지 않는다.
 
-### 5.2 그룹
+### 5.2 폴더와 그룹
 
-| 그룹 | 위치 | 내용 | 묶음 방식 |
-|---|---|---|---|
-| Local_UI | 로컬 | 캐릭터 초상, 아이콘, 공용 UI 이미지(아틀라스) | 함께 |
-| Local_Audio | 로컬 | 버튼음, 로비 BGM | 함께 |
-| Local_Characters | 로컬 | 기본 캐릭터 3종 프리팹과 머티리얼 | 개별 |
-| Local_Chapter01 | 로컬 | 챕터 1 던전 씬(Chapter01) | 함께 |
-| Remote_Chapter02 | 원격 | 챕터 2 던전 씬과 전용 리소스 | 함께 |
-| Remote_Chapter03 | 원격 | 챕터 3 던전 씬과 전용 리소스 | 함께 |
-| Remote_SeasonEvent | 원격 | 시즌 이벤트 코스튬, 이벤트 배너 | 개별 |
+Addressables 콘텐츠는 `Assets/LobbyFlowContent/` 한 곳에 두고, 폴더가 곧 그룹 경계다.
 
-- Boot 씬, 패치 팝업, 로딩 오버레이, UI 시스템 설정은 Addressables가 아니라 빌드 씬과 `Resources`에 둔다. 카탈로그를 받기 전에 필요하기 때문이다.
-- "함께"는 한 번에 쓰는 리소스를 번들 하나로, "개별"은 따로 로드·해제하는 리소스를 각자 번들로 묶는다. 번들 안 일부만 반환해도 번들 전체가 내려가지 않으므로([7.3](#73-번들-단위-메모리)) 수명이 다른 것은 같은 번들에 넣지 않는다.
+```
+Assets/LobbyFlowContent/
+├─ Local/                          앱 내장. 출시 후 변경 금지
+│  ├─ UI/              (2D)        캐릭터 초상, 챕터 아이콘
+│  ├─ Audio/                       로비 BGM
+│  ├─ Characters/      (3D)
+│  │  ├─ Common/                   캐릭터 공용 머티리얼(피부)
+│  │  └─ knight/ ranger/ mage/     기본 캐릭터 프리팹·머티리얼
+│  ├─ Chapter01/                   챕터 1 씬과 전용 머티리얼
+│  └─ Data/            (데이터)    characters.csv, chapters.csv
+└─ Remote/                         CCD. 패치 대상. content/v2 브랜치는 이 아래만 바꾼다
+   ├─ Chapter02/                   챕터 2 씬과 전용 머티리얼
+   ├─ Chapter03/                   챕터 3 씬과 전용 머티리얼
+   ├─ Season/
+   │  ├─ Costumes/     (3D)        시즌 코스튬 프리팹·머티리얼
+   │  └─ Event/        (2D)        이벤트 배너
+   └─ Data/            (데이터)    costumes.csv, event_notice.txt
+```
+
+| 그룹 | 폴더 항목(주소) | 묶음 방식 |
+|---|---|---|
+| Local_UI | `Local/UI` (`UI`) | 함께 |
+| Local_Audio | `Local/Audio` (`Audio`) | 함께 |
+| Local_Characters | `Characters/Common`, `Characters/knight` … 캐릭터마다 하나 | 항목마다 |
+| Local_Chapter01 | `Local/Chapter01` (`Chapter01`) | 함께 |
+| Local_Data | `Local/Data` (`LocalData`) | 함께 |
+| Remote_Chapter02 | `Remote/Chapter02` (`Chapter02`) | 함께 |
+| Remote_Chapter03 | `Remote/Chapter03` (`Chapter03`) | 함께 |
+| Remote_Season | `Remote/Season/Costumes` (`Costumes`), `Remote/Season/Event` (`Event`) | 항목마다 |
+| Remote_Data | `Remote/Data` (`RemoteData`) | 함께 |
+
+- 그룹에는 폴더 단위로 등록한다. 안의 파일은 `Characters/knight/Character_knight.prefab`처럼 폴더 주소 아래 상대 경로가 주소가 된다. v2에서 폴더 안에 파일이 늘어나도 그룹 설정 파일은 바뀌지 않는다.
+- 폴더 항목 하나는 번들 하나다. "항목마다"로 묶어도 폴더 안 파일은 같은 번들에 들어가므로, 따로 받거나 내릴 단위는 하위 폴더로 나눠 각각 등록한다. 원격의 하위 폴더 구성은 v1에서 정하고 v2는 기존 폴더 안에서만 파일을 바꾸거나 더한다.
+- Boot 씬, 패치 팝업, 로딩 오버레이, UI 시스템 설정, 버튼음은 Addressables가 아니라 빌드 씬과 `Resources`(또는 그것이 직접 참조하는 에셋)에 둔다. 카탈로그를 받기 전에 필요하기 때문이다.
+- 로비 씬도 빌드 씬으로 둔다. 로비가 쓰는 리소스(초상, BGM, 배너)는 Addressables로 로드하고 로비 화면이 반환한다. 챕터 씬은 Addressables 씬이며 빌드 설정에 넣지 않는다.
+- 번들 안 일부만 반환해도 번들 전체가 내려가지 않으므로([7.3](#73-번들-단위-메모리)) 수명이 다른 것은 같은 번들에 넣지 않는다. 코스튬은 한 번들이라 하나만 써도 코스튬 번들 전체가 올라온다(데모 규모에서 허용).
 - 압축은 LZ4로 시작한다. 원격 번들의 다운로드 크기를 줄일 필요가 생기면 LZMA를 비교하고 결과를 기록한다.
 - 그룹과 라벨은 구현하면서 조정하고, 바뀌면 이 표를 갱신한다.
 
@@ -129,15 +155,17 @@ UI는 `com.frenil.uisystem`의 `UIScreen`/`UIPopup`과 `OpenAsync<T>()`를 사�
 
 | 라벨 | 대상 | 쓰임 |
 |---|---|---|
-| `patch_boot` | 시작 시 반드시 최신이어야 하는 원격 리소스(시즌 이벤트) | Boot 패치 다운로드 대상 |
-| `chapter02`, `chapter03` | 챕터별 원격 리소스 | 챕터 진입 시 다운로드 대상 |
-| `costume` | 코스튬 전체 | 코스튬 목록 조회 |
+| `patch_boot` | `Costumes`, `Event`, `RemoteData` | Boot 패치 다운로드 대상 |
+| `chapter02`, `chapter03` | `Remote/Chapter02`, `Remote/Chapter03` | 챕터 진입 시 다운로드 대상 |
+
+라벨은 폴더 항목에 붙여 안의 파일 전체에 적용한다. 코스튬 목록은 라벨이 아니라 `costumes.csv`로 조회한다.
 
 ### 5.4 프로필과 경로
 
 | 프로필 | RemoteLoadPath | 용도 |
 |---|---|---|
 | Local | 로컬 빌드 폴더(에디터 호스팅 또는 Use Existing Build) | 에디터와 오프라인 검증 |
+| LocalServer | `http://[ServerHost]:8080/[BuildTarget]`. 에디터 메뉴 **Lobby Flow ▸ 콘텐츠 서버**가 `ServerData/`를 내보낸다. 켜 둔 서버는 Play 진입 등 스크립트를 다시 읽은 뒤 자동으로 다시 연다 | CCD 연결 전 패치 과정 검증. 기기에서 받을 때는 프로필 변수 `ServerHost`를 PC IP로 바꾼다 |
 | CCD_Dev | CCD 개발 환경, 플랫폼별 버킷, `latest` 배지 | 실기기 개발 빌드 |
 
 - CCD 경로 형식(예): `https://<projectId>.client-api.unity3dusercontent.com/client_api/v1/environments/<env>/buckets/<bucketId>/release_by_badge/<badge>/entry_by_path/content/?path=`. 설치한 Addressables·CCD 패키지 버전의 문서로 확인한다.
@@ -157,6 +185,57 @@ UI는 `com.frenil.uisystem`의 `UIScreen`/`UIPopup`과 `OpenAsync<T>()`를 사�
 - 저장 용량의 무료 범위, 초과 시 요금, 결제 수단 등록 필요 여부는 UGS 가격 페이지에서 확인한다([미결](#10-미결-사항)).
 - 반복 검증 중 캐시를 지우고 다시 받는 횟수가 대역폭을 쓴다. 데모 콘텐츠를 수십 MB 안으로 유지하고, 측정 기록에 받은 총량을 적는다.
 - 업로드용 키는 Jenkins Credentials에만 두고 저장소와 빌드에 넣지 않는다.
+
+### 5.6 데이터 테이블
+
+게임 데이터는 CSV와 텍스트로 두고 Addressables로 `TextAsset`을 로드해 파싱한다. 리소스는 데이터 안의 주소 문자열로 가리킨다.
+코스튬처럼 원격 데이터가 원격 리소스를 가리키면, 앱 업데이트 없이 데이터 한 줄과 리소스 하나로 콘텐츠를 추가할 수 있다.
+
+| 파일 | 위치 | 열 |
+|---|---|---|
+| `characters.csv` | 로컬 | `id, name, role, description, color, portrait, prefab` |
+| `chapters.csv` | 로컬 | `id, name, scene, icon, download_label` |
+| `costumes.csv` | 원격 | `id, character_id, name, seasonal, prefab` |
+| `event_notice.txt` | 원격 | 첫 줄 제목, 나머지 본문 |
+
+- 형식: UTF-8, 첫 줄 머리글, 쉼표 구분. 쉼표·줄바꿈·따옴표가 든 값은 큰따옴표로 감싸고 따옴표는 두 번 쓴다. 빈 줄과 `#`로 시작하는 줄은 건너뛴다.
+- 색은 `#RRGGBB`, 참·거짓은 `true`/`false`. 비어 있는 `download_label`은 받을 것이 없는 로컬 챕터다.
+- 파싱 오류(머리글 누락, 중복 id, 없는 캐릭터를 가리키는 코스튬)는 Boot에서 오류로 처리하고 로비로 가지 않는다.
+- 로컬 데이터는 원격 주소를 가리킬 수 있다(챕터 2·3 씬). 이 주소는 출시 후 바꾸지 않는다. 바꾸려면 앱 업데이트다.
+- 데이터 테이블은 Boot 패치가 끝난 뒤 한 번 읽어 앱이 켜져 있는 동안 유지한다. 파싱 후 `TextAsset` 핸들은 바로 반환한다.
+
+### 5.7 콘텐츠 버전 관리 (브랜치)
+
+| 브랜치 | 내용 |
+|---|---|
+| `main` | 코드 전체와 콘텐츠 v1. 저장소를 받으면 v1이다 |
+| `content/v2` | `main`에서 갈라져 `Assets/LobbyFlowContent/Remote/` 아래만 바꾼 커밋 |
+
+| 항목 | v1 | v2 |
+|---|---|---|
+| 시즌 코스튬 | 겨울 축제 3종 | 나이트 겨울 축제 색 변경, 봄 축제 1종 추가 |
+| `costumes.csv` | 3줄 | 4줄 |
+| 이벤트 공지·배너 | 겨울 축제 | 봄 축제 |
+| 챕터 2 | 수정 6개 | 배치와 색 변경 |
+| 로컬 콘텐츠 | — | 바꾸지 않는다 |
+
+패치 테스트 절차:
+
+1. `main`에서 **Lobby Flow ▸ Addressables ▸ 전체 빌드** → 원격 번들 업로드(LocalServer는 **콘텐츠 서버 ▸ 시작**) → 플레이어 빌드. 생긴 `addressables_content_state.bin`을 `main`에 커밋한다.
+2. `git restore --source=content/v2 -- Assets/LobbyFlowContent/Remote`로 원격 폴더만 v2로 덮는다. 브랜치는 바꾸지 않는다.
+3. **Lobby Flow ▸ Addressables ▸ 콘텐츠 업데이트 빌드**(1번 기준 사용) → 업로드.
+4. 1번 플레이어를 켜서 패치 팝업의 받을 크기, 바뀐 코스튬·공지·챕터 2를 확인한다. 콘텐츠 서버 로그로 받은 번들을 확인한다.
+5. `git restore -- Assets/LobbyFlowContent/Remote`와 `git clean -fd -- Assets/LobbyFlowContent/Remote`로 v1으로 되돌린다.
+
+에디터에서 검증할 때는 Addressables Groups 창의 Play Mode Script를 **Use Existing Build**로 둔다. 기본값(Use Asset Database)은 빌드 결과와 원격 경로를 쓰지 않아 패치가 일어나지 않는다.
+`content/v2`의 내용은 **Lobby Flow ▸ 원격 콘텐츠 v2 생성**으로 만든다. v1 대비 바뀌는 파일만 다시 만들며, 나머지 파일은 그대로 두어 불필요한 번들 변경이 생기지 않게 한다.
+
+규칙:
+
+- `content/v2`는 `Remote/` 밖을 바꾸지 않는다. `git diff --stat main...content/v2 -- . ':!Assets/LobbyFlowContent/Remote'`가 비어 있어야 한다(무결성 검사 항목).
+- 기존 에셋을 바꿀 때는 `.meta`를 유지해 GUID가 그대로여야 한다. 새 에셋은 v2 브랜치에 `.meta`와 함께 커밋한다.
+- `main`에서 `Remote/`를 바꾸면 `content/v2`를 `main` 위로 다시 올린다(rebase).
+- v2 콘텐츠는 빌더 메뉴로 만든다. 브랜치 생성·커밋·push는 사용자가 한다.
 
 ---
 
@@ -184,7 +263,7 @@ Boot 씬 (빌드 내장)
 ```
 
 - 시작 시 자동 카탈로그 갱신은 끄고(설정의 수동 갱신 옵션) 이 시퀀스에서만 갱신한다.
-- 카탈로그 형식: Addressables 2.x의 기본 형식과 JSON 옵션을 설치 버전에서 확인해 정한다. 변경 확인은 형식과 무관하게 해시 파일 비교로 이루어진다.
+- 카탈로그 형식: JSON(`EnableJsonCatalog`와 스크립트 심볼 `ENABLE_JSON_CATALOG`, Standalone·Android·iOS). 설정 값만 켜면 빌드는 여전히 바이너리(`catalog_*.bin`)를 만든다. Addressables 2.x 기본값은 바이너리지만 패치 결과를 사람이 읽고 비교할 수 있게 JSON을 쓴다. 변경 확인은 형식과 무관하게 해시 파일 비교로 이루어진다.
 - 다운로드 핸들은 완료 후 반환한다. 받은 번들은 캐시에 남고, 핸들 반환은 캐시를 지우지 않는다.
 
 ### 6.3 패치 팝업
@@ -228,7 +307,7 @@ Boot 씬 (빌드 내장)
 - `LoadAssetAsync`로 받은 핸들은 그 리소스를 쓰는 화면 하나가 소유한다. 소유 객체(`PreviewAsset` 등)가 핸들을 들고, 반환은 `Release()` 한 곳에서만 한다.
 - 인스턴스는 받은 프리팹으로 `Object.Instantiate` 하고 `Object.Destroy`로 지운다. 인스턴스를 모두 지운 뒤 핸들을 반환한다. `InstantiateAsync`는 쓰지 않아 반환 경로를 하나로 유지한다.
 - 같은 키를 여러 화면이 로드하면 각자 핸들을 받고 각자 반환한다. 참조 수가 0이 될 때 내려간다.
-- Addressables 씬은 씬 전환 담당(`SceneFlow`)이 핸들을 소유하고, 다음 씬으로 넘어갈 때 언로드로 반환한다.
+- 챕터 씬은 `ReleaseSceneWhenSceneUnloaded`(기본값)로 로드한다. 다음 씬으로 넘어가 챕터 씬이 언로드되면 Addressables가 핸들을 반환하므로 `SceneFlow`는 핸들을 들고 있지 않는다. 로드에 실패한 핸들만 직접 반환한다.
 - 다운로드 핸들(`DownloadDependenciesAsync`)은 완료나 실패 직후 반환한다.
 
 ### 7.2 해제 시점
@@ -239,7 +318,7 @@ Boot 씬 (빌드 내장)
 | 던전 캐릭터 | `CharacterPreviewPresenter`(던전 화면) | 던전 화면 파괴 |
 | 로비 초상·UI 이미지 | 로비 화면 | 로비 화면 파괴 |
 | 로비 BGM | 로비 화면 | 로비 화면 파괴 |
-| 챕터 씬 | `SceneFlow` | 다음 씬 전환 |
+| 챕터 씬 | Addressables(씬 언로드 시 자동) | 다음 씬 전환 |
 | 패치 다운로드 | Boot 시퀀스 | 다운로드 완료·실패 직후 |
 
 캐시: 처음에는 화면이 닫히면 모두 반환한다. 반복 로드 비용이 측정으로 확인되면 유지할 캐시를 정하고 이 표에 적는다.
@@ -317,8 +396,8 @@ Boot 씬 (빌드 내장)
 | 단계 | 작업과 종료 기준 |
 |---|---|
 | 1 (완료) | 로비 플로우, 던전 왕복, 임시 로더, 요청 번호·취소·소유권 규칙, 지연·실패 주입 메뉴 |
-| 2 | Addressables 설치, 로컬 그룹(UI 이미지·사운드·기본 캐릭터·챕터 1) 구성, 로더 교체와 `Release` 경로 적용. Addressables Profiler로 팝업 열고 닫기 구간 캡처. Android 첫 플레이어 빌드 |
-| 3 | CCD 연결, 원격 그룹(챕터 2·3, 시즌 코스튬). Boot 씬, 카탈로그 확인, 패치 팝업과 진행률, 챕터 진입 다운로드. 콘텐츠 업데이트 1회 검증 |
+| 2 | Addressables 설치, 콘텐츠를 `Assets/LobbyFlowContent`로 옮기고 로컬·원격 그룹 구성, 데이터를 CSV로 전환, 로더 교체와 `Release` 경로 적용, 실제 패치 서비스. LocalServer 프로필로 v1 빌드 → `content/v2` 패치 1회 검증. Addressables Profiler로 팝업 열고 닫기 구간 캡처. Android 첫 플레이어 빌드 |
+| 3 | CCD 연결(프로필 경로와 업로드만 교체), 챕터 진입 다운로드, CCD로 v2 패치 재검증, 실기기 네트워크 끊김 검증 |
 | 4 | Jenkins: 테스트, 무결성 검사, Addressables 빌드, CCD 업로드, 원격 검증, Android 빌드 |
 | 5 | iOS 빌드 연결, 30회 반복 계측과 Memory Profiler 비교, 시연 영상, README |
 
@@ -329,7 +408,7 @@ Boot 씬 (빌드 내장)
 - [ ] CCD 저장 용량 무료 범위, 대역폭 초과 요금, 결제 수단 등록 필요 여부.
 - [ ] Unity Cloud 프로젝트 연결(조직, 프로젝트 ID)과 CCD 환경 이름.
 - [x] 첫 실행이 아닌 오프라인 진입 — 허용한다([6.4](#64-실패와-예외-처리)).
-- [ ] 카탈로그 형식(JSON / 기본 형식).
+- [x] 카탈로그 형식 — JSON(6.2).
 - [x] 로컬 그룹에 넣을 UI 이미지·사운드의 출처 — 빌더가 코드로 직접 그리고 합성한다.
 - [x] iOS 빌드용 macOS 장비 — 보유 Mac을 Jenkins 에이전트로 연결한다.
 - [ ] Mac의 macOS·Xcode 버전이 Unity 6000.3 iOS 빌드 요구 사항을 만족하는지.

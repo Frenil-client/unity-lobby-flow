@@ -1,5 +1,4 @@
 using System.Threading;
-using LobbyFlow.Characters;
 using UnityEngine;
 
 namespace LobbyFlow.Loading

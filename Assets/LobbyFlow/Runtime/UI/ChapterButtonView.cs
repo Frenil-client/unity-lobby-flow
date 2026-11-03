@@ -1,11 +1,11 @@
 using System;
-using LobbyFlow.Chapters;
+using LobbyFlow.Content;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace LobbyFlow.UI
 {
-    /// <summary>로비의 챕터 선택 버튼 하나.</summary>
+    /// <summary>로비의 챕터 선택 버튼 하나. 아이콘은 로비 화면이 로드해 넣어 준다.</summary>
     public sealed class ChapterButtonView : MonoBehaviour
     {
         private static readonly Color NormalColor = new(0.20f, 0.23f, 0.30f);
@@ -15,16 +15,24 @@ namespace LobbyFlow.UI
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
         [SerializeField] private Text _name;
+        [SerializeField] private GameObject _downloadTag;
 
         private Action _clicked;
 
         private void Awake() => _button.onClick.AddListener(() => _clicked?.Invoke());
 
-        public void Bind(ChapterDefinition chapter, Action clicked)
+        public void Bind(ChapterRecord chapter, Action clicked)
         {
             _clicked = clicked;
-            _icon.sprite = chapter.Icon;
-            _name.text = chapter.DisplayName;
+            _name.text = chapter.Name;
+            _downloadTag.SetActive(chapter.RequiresDownload);
+            SetIcon(null);
+        }
+
+        public void SetIcon(Sprite sprite)
+        {
+            _icon.sprite = sprite;
+            _icon.enabled = sprite != null;
         }
 
         public void SetSelected(bool selected) => _background.color = selected ? SelectedColor : NormalColor;

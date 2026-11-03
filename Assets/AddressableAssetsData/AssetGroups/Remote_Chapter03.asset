@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Remote_Chapter03
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Remote_Chapter03
+  m_GUID: 658fa929f31701e4687c17899c6e5fae
+  m_SerializeEntries:
+  - m_GUID: ebffdce027435e44ea6b559918144b44
+    m_Address: Chapter03
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - chapter03
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 175c0138f95387a488516adadd1fcd98, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 1fb6365dd10bec147bfdc2e9a28c1b27, type: 2}
+    - {fileID: 11400000, guid: 1e1de7bd4f9cc884ca2a64c7e9b467f9, type: 2}

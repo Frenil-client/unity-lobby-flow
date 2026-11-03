@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using LobbyFlow.Characters;
 using LobbyFlow.Loading;
 using UnityEngine;
 using Object = UnityEngine.Object;

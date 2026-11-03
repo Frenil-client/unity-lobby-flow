@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using LobbyFlow.Content;
 using LobbyFlow.Loading;
 using LobbyFlow.Patching;
 using LobbyFlow.Scenes;
@@ -51,10 +53,21 @@ namespace LobbyFlow.UI
             _rebootButton.onClick.AddListener(() => SceneFlow.Load(SceneFlow.Boot));
         }
 
+        /// <summary>시작 패치와 원격 챕터 라벨의 캐시를 지운다. 데이터를 아직 읽지 않았으면 시작 패치만 지운다.</summary>
         private static void ClearCache()
         {
-            LobbyServices.PatchService.ClearCache();
-            LobbyLog.Info("다운로드 캐시 삭제");
+            var labels = new List<string> { ContentAddresses.PatchBootLabel };
+            if (LobbyServices.Content != null)
+            {
+                foreach (var chapter in LobbyServices.Content.Chapters)
+                {
+                    if (chapter.RequiresDownload)
+                        labels.Add(chapter.DownloadLabel);
+                }
+            }
+
+            LobbyServices.PatchService.ClearCache(labels);
+            LobbyLog.Info($"다운로드 캐시 삭제: {string.Join(", ", labels)}");
         }
 
         private void OnDestroy()
@@ -82,7 +95,8 @@ namespace LobbyFlow.UI
                 PatchSimulationMode.UpToDate => "모의 패치: 최신",
                 PatchSimulationMode.OfflineWithCache => "모의 패치: 오프라인(캐시 있음)",
                 PatchSimulationMode.OfflineFirstRun => "모의 패치: 오프라인(첫 실행)",
-                _ => "모의 패치: 업데이트 있음",
+                PatchSimulationMode.UpdateAvailable => "모의 패치: 업데이트 있음",
+                _ => "패치: 실제 Addressables",
             });
             SetLabel(_patchFailButton, PatchSimulationSettings.FailDownloadOnce ? "다운로드 끊김: 다음 1회" : "다운로드 끊김: 없음");
             SetLabel(_clearCacheButton, "다운로드 캐시 삭제");

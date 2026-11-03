@@ -16,11 +16,11 @@ namespace LobbyFlow.UI
 
         public void SetMessage(string message) => _message.text = message;
 
-        /// <summary>AsyncOperation.progress 는 활성화 직전 0.9 에서 멈추므로 0.9 를 끝으로 본다.</summary>
-        public void SetProgress(float progress)
+        /// <summary>0~1 비율.</summary>
+        public void SetProgress(float ratio)
         {
             var anchorMax = _progressFill.anchorMax;
-            anchorMax.x = Mathf.Clamp01(progress / 0.9f);
+            anchorMax.x = Mathf.Clamp01(ratio);
             _progressFill.anchorMax = anchorMax;
         }
     }

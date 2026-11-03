@@ -1,0 +1,4 @@
+id,name,scene,icon,download_label
+chapter01,챕터 1 · 지하 묘지,Chapter01/Chapter01.unity,UI/chapter_chapter01.png,
+chapter02,챕터 2 · 얼음 동굴,Chapter02/Chapter02.unity,UI/chapter_chapter02.png,chapter02
+chapter03,챕터 3 · 용암 요새,Chapter03/Chapter03.unity,UI/chapter_chapter03.png,chapter03
