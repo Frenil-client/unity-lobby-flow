@@ -24,6 +24,9 @@ sysinfo.txt
 # addressables_content_state.bin 은 콘텐츠 업데이트 빌드에 필요하므로 추적한다
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+# 플레이어 빌드 중에만 생기는 Addressables 코드 제거 방지 목록(원본은 Library/com.unity.addressables/aa)
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/link.xml
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/link.xml.meta
 /[Ss]erverData/
 InitTestScene*.unity
 

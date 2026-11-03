@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.AddressableAssets;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -52,6 +53,7 @@ namespace LobbyFlow.Editor
                 target = target,
                 options = options,
             });
+            RestoreProjectFilesAfterBuild();
 
             var summary = report.summary;
             if (summary.result != BuildResult.Succeeded)
@@ -62,6 +64,27 @@ namespace LobbyFlow.Editor
 
             Debug.Log($"[LobbyFlow] 플레이어 빌드 완료 ({summary.totalTime.TotalSeconds:0.0}초, {summary.totalSize / (1024f * 1024f):0.0}MB): {Path.GetFullPath(path)}");
             return true;
+        }
+
+        /// <summary>
+        /// 빌드 동안만 바뀌는 프로젝트 파일을 디스크에서도 빌드 전 상태로 돌린다. 두 패키지 모두 빌드 뒤 메모리만 되돌려,
+        /// 그대로 두면 다음 저장이나 스크립트 다시 읽기 전까지 빌드 도중 상태가 git 변경으로 보인다.
+        /// </summary>
+        private static void RestoreProjectFilesAfterBuild()
+        {
+            // Input System 은 빌드 동안 액션 에셋을 preloadedAssets 에 넣었다가 빌드 뒤 메모리에서만 뺀다.
+            EditorUtility.SetDirty(Unsupported.GetSerializedAssetInterfaceSingleton("PlayerSettings"));
+
+            // Addressables 는 코드 제거 방지 목록(link.xml)을 설정 폴더에 복사해 두고 다음 스크립트 다시 읽기 때 지운다.
+            var settings = AddressableAssetSettingsDefaultObject.Settings;
+            if (settings != null)
+            {
+                var linkPath = $"{settings.ConfigFolder}/link.xml";
+                if (AssetDatabase.LoadMainAssetAtPath(linkPath) != null)
+                    AssetDatabase.DeleteAsset(linkPath);
+            }
+
+            AssetDatabase.SaveAssets();
         }
     }
 }

@@ -151,7 +151,7 @@ Assets/LobbyFlowContent/
 - 로비 씬도 빌드 씬으로 둔다. 로비가 쓰는 리소스(초상, BGM, 배너)는 Addressables로 로드하고 로비 화면이 반환한다. 챕터 씬은 Addressables 씬이며 빌드 설정에 넣지 않는다.
 - 번들 안 일부만 반환해도 번들 전체가 내려가지 않으므로([7.3](#73-번들-단위-메모리)) 수명이 다른 것은 같은 번들에 넣지 않는다. 코스튬은 한 번들이라 하나만 써도 코스튬 번들 전체가 올라온다(데모 규모에서 허용).
 - 폰트는 로컬 그룹(`Local_Fonts`)에 둔다. Addressables가 아닌 폰트를 여러 씬 번들이 참조하면 번들마다 복사본이 들어간다. 실제로 v1에서 원본 TTF(직렬화 4.69MB)가 챕터 1·2·3 씬 번들에 각각 들어가, LZ4 압축 후 씬 번들 하나가 약 2.8MB로 챕터 다운로드 크기 대부분을 차지했다(빌드 리포트로 확인). 빌드 씬과 UI 프리팹도 같은 폰트를 쓰므로 플레이어 데이터와 로컬 번들에는 한 벌씩 들어간다(둘 다 앱 내장, 다운로드 없음).
-- 폰트 에셋은 동적 모드다. 실행 중 쓰는 글자만 아틀라스에 넣고, Addressables 빌드 메뉴와 플레이어 빌드 전에 비운다. 비우지 않으면 에디터 플레이로 쌓인 글자 때문에 로컬 폰트 번들 해시가 바뀌어 콘텐츠 업데이트가 정적 그룹 변경으로 본다.
+- 폰트 에셋은 동적 모드다. 실행 중 쓰는 글자만 아틀라스에 넣는다. 디스크에는 항상 비운 상태로 저장하고(저장 직전 보정, `DynamicFontSaveGuard`), Addressables 빌드 메뉴와 플레이어 빌드 직전에도 비운다. 비우지 않으면 에디터 플레이로 쌓인 글자 때문에 로컬 폰트 번들 해시가 바뀌어 콘텐츠 업데이트가 정적 그룹 변경으로 본다.
 - 압축은 LZ4로 시작한다. 원격 번들의 다운로드 크기를 줄일 필요가 생기면 LZMA를 비교하고 결과를 기록한다.
 - 그룹과 라벨은 구현하면서 조정하고, 바뀌면 이 표를 갱신한다.
 
@@ -233,7 +233,7 @@ Assets/LobbyFlowContent/
 
 v2 패치는 1번 플레이어로 검증한다. 콘텐츠 업데이트 빌드는 원격 카탈로그와 함께 로컬 카탈로그(`Library/com.unity.addressables/aa`)도 새로 쓰므로, 업데이트 뒤 에디터의 **Use Existing Build**는 이미 v2를 가진 앱처럼 동작해 카탈로그 갱신 단계가 일어나지 않는다. 같은 이유로 업데이트 뒤에 만든 플레이어는 출시본(v1)을 대신하지 못한다.
 에디터에서 v1 패치(첫 설치 다운로드)를 볼 때는 Play Mode Script를 **Use Existing Build**로 둔다. 기본값(Use Asset Database)은 빌드 결과와 원격 경로를 쓰지 않아 패치가 일어나지 않는다.
-플레이어 빌드는 Addressables를 다시 빌드하지 않는다(`Build Addressables on Player Build` 끔). 콘텐츠는 빌드 메뉴로만 만들어 업데이트 기준이 몰래 바뀌지 않게 한다. LocalServer는 http라 `Allow downloads over HTTP`는 개발 빌드에서만 허용한다.
+플레이어 빌드는 Addressables를 다시 빌드하지 않는다(`Build Addressables on Player Build` 끔). 콘텐츠는 빌드 메뉴로만 만들어 업데이트 기준이 몰래 바뀌지 않게 한다. 빌드 동안만 바뀌는 `preloadedAssets`(Input System)와 `AddressableAssetsData/link.xml`(Addressables)은 빌드 메뉴가 빌드 직후 디스크에서도 되돌린다. `link.xml`은 추적하지 않는다. LocalServer는 http라 `Allow downloads over HTTP`는 개발 빌드에서만 허용한다.
 `content/v2`의 내용은 **Lobby Flow ▸ 원격 콘텐츠 v2 생성**으로 만든다. v1 대비 바뀌는 파일만 다시 만들며, 나머지 파일은 그대로 두어 불필요한 번들 변경이 생기지 않게 한다.
 
 규칙:
