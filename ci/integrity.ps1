@@ -41,7 +41,12 @@ Check 'link.xml 을 추적하지 않는다' ((git ls-files 'Assets/AddressableAs
 $font = Get-Content 'Assets/LobbyFlowContent/Local/Fonts/NanumGothic SDF.asset' -Raw
 Check '폰트 에셋 글자 표가 비어 있다' (($font -match '(?m)^\s+m_GlyphTable: \[\]') -and ($font -match '(?m)^\s+m_CharacterTable: \[\]'))
 
-# 6. 생성 도구(빌더)와 비밀값이 저장소에 없다.
+# 6. 셰이더가 D3D11 디버그 정보를 넣지 않는다. 넣으면 컴파일마다 달라지는 디버그 청크(SPDB) 때문에 같은 커밋이라도
+#    Windows 번들 해시가 PC 와 셰이더 캐시마다 달라진다(SPEC 5.2, TMP_SDF-Mobile 이 기본으로 켜 둔다).
+$debugShaders = git grep -lI 'enable_d3d11_debug_symbols' -- 'Assets/*.shader' 'Assets/*.cginc' 'Assets/*.hlsl'
+Check '셰이더 D3D11 디버그 정보를 끈다' (@($debugShaders).Count -eq 0) ($debugShaders -join ', ')
+
+# 7. 생성 도구(빌더)와 비밀값이 저장소에 없다.
 Check '빌더 코드를 추적하지 않는다' ((git ls-files 'Assets/LobbyFlow/Builder') -eq $null)
 $secrets = git grep -nIE '(SERVICE_SECRET_KEY|SERVICE_KEY_ID)[[:space:]]*[:=][[:space:]]*["'']?[A-Za-z0-9+/=_-]{16,}' -- ':!ci/integrity.ps1'
 Check '서비스 계정 키가 커밋되지 않았다' (@($secrets).Count -eq 0) ($secrets -join '; ')

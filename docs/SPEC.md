@@ -154,6 +154,7 @@ Assets/LobbyFlowContent/
 - 폰트는 로컬 그룹(`Local_Fonts`)에 둔다. Addressables가 아닌 폰트를 여러 씬 번들이 참조하면 번들마다 복사본이 들어간다. 실제로 v1에서 원본 TTF(직렬화 4.69MB)가 챕터 1·2·3 씬 번들에 각각 들어가, LZ4 압축 후 씬 번들 하나가 약 2.8MB로 챕터 다운로드 크기 대부분을 차지했다(빌드 리포트로 확인). 빌드 씬과 UI 프리팹도 같은 폰트를 쓰므로 플레이어 데이터와 로컬 번들에는 한 벌씩 들어간다(둘 다 앱 내장, 다운로드 없음).
 - 폰트 에셋은 동적 모드다. 실행 중 쓰는 글자만 아틀라스에 넣는다. 디스크에는 항상 비운 상태로 저장하고(저장 직전 보정, `DynamicFontSaveGuard`), Addressables 빌드 메뉴와 플레이어 빌드 직전에도 비운다. 비우지 않으면 에디터 플레이로 쌓인 글자 때문에 로컬 폰트 번들 해시가 바뀌어 콘텐츠 업데이트가 정적 그룹 변경으로 본다.
 - 공통 번들(내장 셰이더 `unitybuiltinassets`, 스크립트 `monoscripts`) 이름 접두어는 `lobbyflow`로 고정한다. Addressables 기본값은 프로젝트 폴더 이름의 해시라, 폴더 이름이 다른 Jenkins 작업 폴더(`lobby-flow`)에서 공통 번들과 그에 의존하는 씬·폰트 번들 해시가 로컬(`unity-lobby-flow`)과 달라졌다. 그러면 한쪽에서 올린 CCD 콘텐츠를 다른 쪽에서 만든 플레이어가 받지 못한다(2026-11-05 Jenkins 빌드 #4에서 발견). EditMode 테스트가 이 설정을 검사한다.
+- 셰이더에 D3D11 디버그 정보(`#pragma enable_d3d11_debug_symbols`)를 넣지 않는다. TMP Essentials의 `TMP_SDF-Mobile.shader`가 이 줄을 기본으로 갖고 있어, DX11 컴파일 결과에 디버그 청크(SPDB)가 들어갔다. 셰이더 본문(SHDR)이 같아도 이 청크는 작업 폴더나 셰이더 캐시에 따라 달라졌다(컴파일마다 달라지는지, 경로 때문인지는 가리지 않았다). 폰트 머티리얼이 이 셰이더를 쓰므로 Windows 폰트 번들 해시가 로컬(`8aa323fe…`)과 Jenkins(`3ebbea25…`)에서 달랐다. Android는 DX11로 컴파일하지 않아 같았다(2026-11-06 Jenkins 빌드 #8과 로컬 전체 빌드 비교, 두 번들을 풀어 셰이더 블록의 SPDB 청크만 다른 것을 확인). 줄을 지우고 저장소 무결성 검사로 막는다.
 - 압축은 LZ4로 시작한다. 원격 번들의 다운로드 크기를 줄일 필요가 생기면 LZMA를 비교하고 결과를 기록한다.
 - 그룹과 라벨은 구현하면서 조정하고, 바뀌면 이 표를 갱신한다.
 
@@ -405,6 +406,7 @@ Unity 없이(`ci/integrity.ps1`):
 - `ENABLE_JSON_CATALOG` 심볼이 Standalone, Android, iPhone에 있다.
 - 빌드 도중 상태(`preloadedAssets`, `AddressableAssetsData/link.xml`)가 커밋되지 않았다.
 - 동적 폰트 에셋이 비운 상태(글자 표 없음)로 커밋돼 있다.
+- 셰이더가 D3D11 디버그 정보를 넣지 않는다(5.2).
 - 빌더 코드와 서비스 계정 키가 저장소에 없다.
 
 Unity 안에서(EditMode 테스트 `ContentIntegrityTests`):
