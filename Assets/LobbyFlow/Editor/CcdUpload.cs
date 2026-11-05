@@ -13,19 +13,12 @@ namespace LobbyFlow.Editor
     /// UGS CLI(<c>ugs ccd entries sync -r</c>)를 그대로 호출하므로 Jenkins 도 같은 명령을 쓴다.
     /// 인증은 서비스 계정이다. 키는 환경 변수(UGS_CLI_SERVICE_KEY_ID, UGS_CLI_SERVICE_SECRET_KEY)나 <c>ugs login</c> 으로 주고 저장소에 두지 않는다.
     /// </summary>
-    public static class CcdUploadMenu
+    public static class CcdUpload
     {
         private const string LogPrefix = "[CCD]";
         private const int TimeoutMilliseconds = 10 * 60 * 1000;
 
-        [MenuItem("Lobby Flow/CCD/현재 플랫폼 업로드와 릴리스")]
-        private static void UploadFromMenu()
-        {
-            if (EditorUtility.DisplayDialog("CCD 업로드",
-                    $"ServerData 를 CCD '{CcdConfig.Current.Name}' 버킷({CcdConfig.Environment})에 올리고 새 릴리스를 만듭니다. latest 배지를 쓰는 플레이어가 바로 받게 됩니다.",
-                    "업로드", "취소"))
-                UploadAndRelease($"Lobby Flow {DateTime.Now:yyyy-MM-dd HH:mm}");
-        }
+        public static string DefaultReleaseNotes => $"Lobby Flow {DateTime.Now:yyyy-MM-dd HH:mm}";
 
         /// <returns>성공하면 true.</returns>
         public static bool UploadAndRelease(string releaseNotes)
@@ -38,9 +31,9 @@ namespace LobbyFlow.Editor
             }
 
             // LocalServer 프로필로 빌드한 카탈로그는 localhost 를 가리키므로 올려도 기기에서 쓸 수 없다.
-            if (AddressablesBuildMenu.ActiveProfileName != AddressablesBuildMenu.CcdProfile)
+            if (AddressablesBuild.ActiveProfileName != AddressablesBuild.CcdProfile)
             {
-                Debug.LogError($"{LogPrefix} 현재 프로필이 {AddressablesBuildMenu.ActiveProfileName} 이다. CCD 프로필로 바꾸고 전체 빌드를 다시 한 뒤 올린다.");
+                Debug.LogError($"{LogPrefix} 현재 프로필이 {AddressablesBuild.ActiveProfileName} 이다. CCD 프로필로 바꾸고 전체 빌드를 다시 한 뒤 올린다.");
                 return false;
             }
 

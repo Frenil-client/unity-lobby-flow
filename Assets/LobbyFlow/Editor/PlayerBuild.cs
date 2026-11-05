@@ -4,34 +4,16 @@ using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
 
 namespace LobbyFlow.Editor
 {
     /// <summary>
-    /// 플레이어 빌드(SPEC 5.7). Addressables 콘텐츠는 빌드 메뉴로 따로 만들고, 플레이어에는 그때의 로컬 콘텐츠와 카탈로그가 들어간다.
+    /// 플레이어 빌드(SPEC 5.7). Addressables 콘텐츠는 빌드 창에서 따로 만들고, 플레이어에는 그때의 로컬 콘텐츠와 카탈로그가 들어간다.
     /// 콘텐츠 업데이트 빌드도 로컬 카탈로그를 새로 쓰므로, 출시본을 흉내 내는 플레이어는 전체 빌드 직후 업데이트 전에 만든다.
     /// </summary>
-    public static class PlayerBuildMenu
+    public static class PlayerBuild
     {
         public const string OutputRoot = "Builds";
-
-        [MenuItem("Lobby Flow/플레이어 빌드/Windows 개발 빌드")]
-        private static void BuildWindowsFromMenu()
-        {
-            if (BuildWindowsDevelopment(out var path))
-                EditorUtility.RevealInFinder(path);
-        }
-
-        [MenuItem("Lobby Flow/플레이어 빌드/Android 개발 빌드")]
-        private static void BuildAndroidFromMenu()
-        {
-            if (BuildAndroidDevelopment(false, out var path))
-                EditorUtility.RevealInFinder(path);
-        }
-
-        [MenuItem("Lobby Flow/플레이어 빌드/Android 개발 빌드 후 기기 실행")]
-        private static void BuildAndRunAndroidFromMenu() => BuildAndroidDevelopment(true, out _);
 
         /// <returns>성공하면 true.</returns>
         public static bool BuildWindowsDevelopment(out string path)
@@ -40,7 +22,7 @@ namespace LobbyFlow.Editor
             return Build(BuildTarget.StandaloneWindows64, path, BuildOptions.Development);
         }
 
-        /// <param name="runOnDevice">USB 로 연결된 기기에 설치하고 실행한다. 실행 전에 기기의 localhost:8080 을 PC 콘텐츠 서버로 잇는다.</param>
+        /// <param name="runOnDevice">USB 로 연결된 기기에 설치하고 실행한다. LocalServer 프로필이면 실행 전에 기기의 localhost:8080 을 PC 콘텐츠 서버로 잇는다.</param>
         /// <returns>성공하면 true.</returns>
         public static bool BuildAndroidDevelopment(bool runOnDevice, out string path)
         {
@@ -53,7 +35,7 @@ namespace LobbyFlow.Editor
             if (runOnDevice)
             {
                 // LocalServer 프로필은 localhost 다. 앱이 켜지자마자 카탈로그를 확인하므로 설치 전에 연결해 둔다.
-                if (!ContentServer.ReverseToAndroidDevice())
+                if (AddressablesBuild.ActiveProfileName == AddressablesBuild.LocalServerProfile && !ContentServer.ReverseToAndroidDevice())
                     return false;
 
                 options |= BuildOptions.AutoRunPlayer;
@@ -64,27 +46,17 @@ namespace LobbyFlow.Editor
 
         private static bool Build(BuildTarget target, string path, BuildOptions options)
         {
-            // 플랫폼 전환은 전체 재임포트를 부르므로 메뉴에서 하지 않는다. Jenkins 는 -buildTarget 으로 연다.
+            // 플랫폼 전환은 전체 재임포트를 부르므로 빌드 창에서 하지 않는다. Jenkins 는 -buildTarget 으로 연다.
             if (EditorUserBuildSettings.activeBuildTarget != target)
             {
                 Debug.LogError($"[LobbyFlow] 현재 플랫폼({EditorUserBuildSettings.activeBuildTarget})이 {target} 이 아니다. 플랫폼을 바꾼 뒤 빌드한다.");
                 return false;
             }
 
-            // 'Build Addressables on Player Build' 를 끄고 쓰므로, 빌드된 콘텐츠가 없으면 빈 플레이어가 나온다.
-            var runtimeSettingsPath = Path.Combine(Addressables.BuildPath, "settings.json");
-            if (!File.Exists(runtimeSettingsPath))
+            // 'Build Addressables on Player Build' 를 끄고 쓰므로, 이 플랫폼의 Addressables 빌드가 지금 프로필로 되어 있어야 한다.
+            if (!AddressablesBuild.IsBuildCurrent(out var buildState))
             {
-                Debug.LogError($"[LobbyFlow] Addressables 빌드 결과가 없다: {Addressables.BuildPath}. 전체 빌드를 먼저 한다.");
-                return false;
-            }
-
-            // 프로필을 바꾸거나 다른 플랫폼에서 빌드한 뒤 이 플랫폼을 다시 빌드하지 않으면, 이전 원격 주소(예: localhost)가 플레이어에 들어간다.
-            var aaSettings = AddressableAssetSettingsDefaultObject.Settings;
-            var remoteCatalog = aaSettings != null ? aaSettings.RemoteCatalogLoadPath.GetValue(aaSettings) : null;
-            if (!string.IsNullOrEmpty(remoteCatalog) && !File.ReadAllText(runtimeSettingsPath).Contains(remoteCatalog))
-            {
-                Debug.LogError($"[LobbyFlow] {target} Addressables 빌드가 현재 프로필({AddressablesBuildMenu.ActiveProfileName})의 원격 주소와 다르다. 이 플랫폼에서 전체 빌드를 다시 한다.");
+                Debug.LogError($"[LobbyFlow] {target} Addressables 빌드: {buildState}");
                 return false;
             }
 

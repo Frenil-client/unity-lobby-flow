@@ -17,8 +17,6 @@ namespace LobbyFlow.Editor
     public static class ContentServer
     {
         public const int Port = 8080;
-        private const string StartMenu = "Lobby Flow/콘텐츠 서버/시작";
-        private const string StopMenu = "Lobby Flow/콘텐츠 서버/중지";
         private const string LogPrefix = "[ContentServer]";
         private const string RunningKey = "LobbyFlow.ContentServer.Running";
 
@@ -38,14 +36,12 @@ namespace LobbyFlow.Editor
                 Open("다시 시작");
         }
 
-        [MenuItem(StartMenu)]
         public static void Start()
         {
             SessionState.SetBool(RunningKey, true);
             Open("시작");
         }
 
-        [MenuItem(StopMenu)]
         public static void Stop()
         {
             SessionState.EraseBool(RunningKey);
@@ -91,15 +87,6 @@ namespace LobbyFlow.Editor
             _listener = null;
             _thread = null;
         }
-
-        [MenuItem(StartMenu, true)]
-        private static bool CanStart() => !IsRunning;
-
-        [MenuItem(StopMenu, true)]
-        private static bool CanStop() => IsRunning;
-
-        [MenuItem("Lobby Flow/콘텐츠 서버/Android 기기 연결 (adb reverse)")]
-        private static void ReverseToAndroidDeviceFromMenu() => ReverseToAndroidDevice();
 
         /// <summary>
         /// USB 로 연결된 Android 기기의 localhost:<see cref="Port"/> 를 이 PC 의 같은 포트로 잇는다(adb reverse).

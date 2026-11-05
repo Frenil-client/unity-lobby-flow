@@ -28,6 +28,8 @@ sysinfo.txt
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/link.xml
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/link.xml.meta
 /[Ss]erverData/
+# Android 네이티브 빌드(Gradle/CMake prefab) 임시 폴더
+/.utmp/
 InitTestScene*.unity
 
 # 씬·프리팹 생성 빌더 — 산출물만 추적한다. 폴더 meta 까지 함께 제외해야 고아 meta 가 남지 않는다
