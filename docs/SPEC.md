@@ -411,7 +411,7 @@ Boot 씬 (빌드 내장)
 |---|---|
 | 1 (완료) | 로비 플로우, 던전 왕복, 임시 로더, 요청 번호·취소·소유권 규칙, 지연·실패 주입 메뉴 |
 | 2 | Addressables 설치, 콘텐츠를 `Assets/LobbyFlowContent`로 옮기고 로컬·원격 그룹 구성, 데이터를 CSV로 전환, 로더 교체와 `Release` 경로 적용, 실제 패치 서비스. LocalServer 프로필로 v1 빌드 → `content/v2` 패치 1회 검증. Addressables Profiler로 팝업 열고 닫기 구간 캡처. Android 첫 플레이어 빌드(완료, 2026-11-05 CCD로 화면 확인) |
-| 3 | CCD 연결(프로필 경로와 업로드만 교체), 챕터 진입 다운로드, CCD로 v2 패치 재검증(Windows 완료, 2026-11-05), 실기기 네트워크 끊김 검증 |
+| 3 | CCD 연결(프로필 경로와 업로드만 교체), 챕터 진입 다운로드, CCD로 v2 패치 재검증(Windows, Android 완료, 2026-11-05), 실기기 네트워크 끊김 검증 |
 | 4 | Jenkins: 테스트, 무결성 검사, Addressables 빌드, CCD 업로드, 원격 검증, Android 빌드 |
 | 5 | iOS 빌드 연결, 30회 반복 계측과 Memory Profiler 비교, 시연 영상, README |
 
@@ -440,7 +440,7 @@ Boot 씬 (빌드 내장)
 - 팝업 열기와 닫기, 씬 왕복을 각각 30회 이상 반복한 확인 기록.
 - Addressables Profiler에서 로드 후 증가하고 반환 후 감소하는 구간의 캡처 또는 영상.
 - 반복 전후 Memory Profiler 스냅샷 비교 결과.
-- 콘텐츠 업데이트 1회의 전후 기록(바뀐 번들, 받은 크기, 표시 결과). LocalServer 기록: `docs/records/2026-11-04-content-update-v2.md`. CCD로 다시 기록한다.
+- 콘텐츠 업데이트 1회의 전후 기록(바뀐 번들, 받은 크기, 표시 결과). LocalServer 기록: `docs/records/2026-11-04-content-update-v2.md`, CCD 기록: `docs/records/2026-11-05-ccd-v1-v2.md`(Windows v1→v2, 배지 전환, Android v1→v2).
 - 기기, 빌드 설정, 그룹 구성, 캐시 정책, 네트워크 조건, 반복 조건을 적은 로딩 지연과 메모리 관측 결과.
 - 같은 조건의 수정 전후 결과(실제로 발견한 문제가 있을 때).
 - Jenkins 파이프라인 실행 기록 1건 이상과 단계별 결과.
