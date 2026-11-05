@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using LobbyFlow.Patching;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
@@ -15,7 +17,12 @@ namespace LobbyFlow.Editor
     public sealed class BuildWindow : EditorWindow
     {
         private static readonly string[] Profiles = { AddressablesBuild.LocalServerProfile, AddressablesBuild.CcdProfile };
+        private static readonly string[] UploadBadges = { "없음 (latest 만)", "v1", "v2" };
+        private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
 
+        private readonly List<(string Badge, string Result)> _connection = new();
+        private bool _connectionChecking;
+        private int _uploadBadge;
         private bool _buildCurrent;
         private string _buildState;
         private string _contentStatePath;
@@ -133,30 +140,80 @@ namespace LobbyFlow.Editor
 
         private void DrawCcd()
         {
-            Header("CCD");
+            Header("CCD (다운로드는 누구나, 업로드는 작성자만)");
             var bucket = CcdConfig.Current;
-            EditorGUILayout.LabelField("버킷", $"{bucket.Name} ({CcdConfig.Environment}, {CcdConfig.Badge})");
-            _releaseNotes = EditorGUILayout.TextField("릴리스 메모", _releaseNotes);
+            EditorGUILayout.LabelField("버킷", $"{bucket.Name} ({CcdConfig.Environment})");
+            EditorGUILayout.LabelField("배지", $"출시 빌드 {CcdConfig.LatestBadge}, 개발 빌드는 테스트 메뉴에서 선택(처음 {CcdConfig.TestBadges[0]})");
+
+            using (new EditorGUI.DisabledScope(_connectionChecking))
+            {
+                if (GUILayout.Button(_connectionChecking ? "확인 중..." : "CCD 연결 확인 (키 필요 없음)"))
+                    CheckConnection(bucket);
+            }
+
+            foreach (var line in _connection)
+                EditorGUILayout.LabelField(line.Badge, line.Result);
+
+            EditorGUILayout.Space();
+            if (!CcdUpload.HasServiceKey)
+            {
+                EditorGUILayout.HelpBox("서비스 계정 키(UGS_CLI_SERVICE_KEY_ID, UGS_CLI_SERVICE_SECRET_KEY)가 없어 업로드할 수 없다. 버전을 바꿔 보는 테스트는 LocalServer 프로필로 한다(docs/guides/local-patch-test.md).", MessageType.Info);
+                return;
+            }
 
             var isCcd = AddressablesBuild.ActiveProfileName == AddressablesBuild.CcdProfile;
             if (!isCcd)
                 EditorGUILayout.HelpBox("CCD 프로필로 바꾸고 전체 빌드한 뒤 올린다.", MessageType.None);
 
+            _releaseNotes = EditorGUILayout.TextField("릴리스 메모", _releaseNotes);
+            _uploadBadge = EditorGUILayout.Popup("콘텐츠 버전 배지", _uploadBadge, UploadBadges);
+
             using (new EditorGUI.DisabledScope(!isCcd || !_buildCurrent))
             {
+                var badge = _uploadBadge > 0 ? UploadBadges[_uploadBadge] : null;
                 if (GUILayout.Button("현재 플랫폼 업로드와 릴리스") &&
                     EditorUtility.DisplayDialog("CCD 업로드",
-                        $"ServerData 를 CCD '{bucket.Name}' 버킷({CcdConfig.Environment})에 올리고 새 릴리스를 만듭니다. {CcdConfig.Badge} 배지를 쓰는 플레이어가 바로 받게 됩니다.",
+                        $"ServerData 를 CCD '{bucket.Name}' 버킷({CcdConfig.Environment})에 올리고 새 릴리스를 만듭니다." +
+                        $" {CcdConfig.LatestBadge}{(badge != null ? $", {badge}" : "")} 배지가 새 릴리스로 옮겨집니다.",
                         "업로드", "취소"))
                 {
                     var notes = _releaseNotes;
                     Run(() =>
                     {
-                        if (CcdUpload.UploadAndRelease(notes))
+                        if (CcdUpload.UploadAndRelease(notes, badge))
                             _releaseNotes = CcdUpload.DefaultReleaseNotes;
                     });
                 }
             }
+        }
+
+        /// <summary>현재 플랫폼 버킷의 배지마다 카탈로그 해시를 받아 본다. 공개 주소라 키 없이 된다.</summary>
+        private async void CheckConnection(CcdBucket bucket)
+        {
+            _connectionChecking = true;
+            _connection.Clear();
+            var catalogHash = $"catalog_{AddressableAssetSettingsDefaultObject.Settings?.PlayerBuildVersion}.hash";
+            foreach (var badge in CcdConfig.TestBadges)
+            {
+                string result;
+                try
+                {
+                    using var response = await Http.GetAsync(CcdConfig.EntryUrl(bucket, badge, catalogHash));
+                    result = response.IsSuccessStatusCode
+                        ? $"연결됨, 카탈로그 해시 {(await response.Content.ReadAsStringAsync()).Trim()}"
+                        : $"{(int)response.StatusCode} {(response.StatusCode == System.Net.HttpStatusCode.NotFound ? "(이 배지의 릴리스 없음)" : response.ReasonPhrase)}";
+                }
+                catch (Exception e)
+                {
+                    result = $"실패: {e.GetBaseException().Message}";
+                }
+
+                _connection.Add((badge, result));
+            }
+
+            _connectionChecking = false;
+            if (this != null)
+                Repaint();
         }
 
         private static void Header(string title)

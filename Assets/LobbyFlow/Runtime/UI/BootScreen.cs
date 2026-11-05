@@ -48,7 +48,7 @@ namespace LobbyFlow.UI
         private async Awaitable RunAsync(CancellationToken cancellationToken)
         {
             var patch = LobbyServices.PatchService;
-            LobbyLog.Info($"Boot 시작, 패치 서비스 {patch.GetType().Name}");
+            LobbyLog.Info($"Boot 시작, 패치 서비스 {patch.GetType().Name}, CCD 배지 {CcdConfig.Badge}");
 
             var check = await CheckWithRetryAsync(patch, cancellationToken);
             if (check == BootStep.Quit)

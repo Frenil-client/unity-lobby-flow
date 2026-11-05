@@ -20,8 +20,14 @@ namespace LobbyFlow.Editor
 
         public static string DefaultReleaseNotes => $"Lobby Flow {DateTime.Now:yyyy-MM-dd HH:mm}";
 
+        /// <summary>업로드 권한이 있는지. 서비스 계정 키는 작성자 PC 의 환경 변수에만 있다(받은 사람은 다운로드만 한다).</summary>
+        public static bool HasServiceKey =>
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UGS_CLI_SERVICE_KEY_ID")) &&
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UGS_CLI_SERVICE_SECRET_KEY"));
+
+        /// <param name="badge">새 릴리스에 붙일 콘텐츠 버전 배지(v1, v2). 비우면 CCD 가 옮기는 latest 만 붙는다.</param>
         /// <returns>성공하면 true.</returns>
-        public static bool UploadAndRelease(string releaseNotes)
+        public static bool UploadAndRelease(string releaseNotes, string badge = null)
         {
             var settings = AddressableAssetSettingsDefaultObject.Settings;
             if (settings == null)
@@ -56,10 +62,13 @@ namespace LobbyFlow.Editor
                 // 지우기(-x)는 쓰지 않는다. 이전 카탈로그를 가진 플레이어가 아직 이전 번들을 받을 수 있어야 한다.
                 EditorUtility.DisplayProgressBar("CCD", $"{bucket.Name} 에 올리고 릴리스 만드는 중", 0.5f);
                 var arguments = $"ccd entries sync \"{folder}\" -p {CcdConfig.ProjectId} -e {CcdConfig.Environment} -b {bucket.Name} -r -n \"{releaseNotes}\" -j";
+                if (!string.IsNullOrEmpty(badge))
+                    arguments += $" -u {badge}";
+
                 if (!RunUgs(arguments, out var output))
                     return false;
 
-                Debug.Log($"{LogPrefix} {bucket.Name} 업로드와 릴리스 완료({CcdConfig.Environment}).\n{output}");
+                Debug.Log($"{LogPrefix} {bucket.Name} 업로드와 릴리스 완료({CcdConfig.Environment}{(string.IsNullOrEmpty(badge) ? "" : $", 배지 {badge}")}).\n{output}");
                 return true;
             }
             finally

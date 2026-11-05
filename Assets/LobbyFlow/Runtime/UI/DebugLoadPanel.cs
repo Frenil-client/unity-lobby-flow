@@ -27,6 +27,7 @@ namespace LobbyFlow.UI
         [SerializeField] private Button _patchModeButton;
         [SerializeField] private Button _patchFailButton;
         [SerializeField] private Button _clearCacheButton;
+        [SerializeField] private Button _contentBadgeButton;
         [SerializeField] private Button _rebootButton;
         [SerializeField] private TMP_Text _counters;
 
@@ -51,7 +52,21 @@ namespace LobbyFlow.UI
             _patchModeButton.onClick.AddListener(PatchSimulationSettings.CycleMode);
             _patchFailButton.onClick.AddListener(() => PatchSimulationSettings.FailDownloadOnce = !PatchSimulationSettings.FailDownloadOnce);
             _clearCacheButton.onClick.AddListener(ClearCache);
+            _contentBadgeButton.onClick.AddListener(CycleContentBadge);
             _rebootButton.onClick.AddListener(() => SceneFlow.Load(SceneFlow.Boot));
+        }
+
+        /// <summary>
+        /// 다음 실행부터 받을 CCD 콘텐츠 버전(v1 → v2 → latest)을 바꾼다. 설치한 기기에서 겨울(v1)에서 봄(v2)으로 바뀌는 패치를 보는 데 쓴다.
+        /// Addressables 는 시작할 때 주소를 정하므로 "Boot 다시 실행"이 아니라 앱을 다시 시작해야 적용된다.
+        /// </summary>
+        private static void CycleContentBadge()
+        {
+            var badges = CcdConfig.TestBadges;
+            var next = badges[(System.Array.IndexOf(badges, CcdConfig.TestBadge) + 1) % badges.Length];
+            CcdConfig.TestBadge = next;
+            LobbyLog.Info($"CCD 콘텐츠 {next} 선택(현재 실행은 {CcdConfig.Badge})");
+            MessageToast.Show(next == CcdConfig.Badge ? $"CCD 콘텐츠 {next}" : $"앱을 다시 시작하면 CCD 콘텐츠 {next}를 받습니다.");
         }
 
         /// <summary>시작 패치와 원격 챕터 라벨의 캐시를 지운다. 데이터를 아직 읽지 않았으면 시작 패치만 지운다.</summary>
@@ -101,6 +116,9 @@ namespace LobbyFlow.UI
             });
             SetLabel(_patchFailButton, PatchSimulationSettings.FailDownloadOnce ? "다운로드 끊김: 다음 1회" : "다운로드 끊김: 없음");
             SetLabel(_clearCacheButton, "다운로드 캐시 삭제");
+            SetLabel(_contentBadgeButton, CcdConfig.TestBadge == CcdConfig.Badge
+                ? $"CCD 콘텐츠: {CcdConfig.Badge}"
+                : $"CCD 콘텐츠: {CcdConfig.Badge} → {CcdConfig.TestBadge} (재시작 후)");
             SetLabel(_rebootButton, "Boot 다시 실행");
 
             // 같은 값이면 TMP_Text 에 다시 쓰지 않아 매 프레임 메시 재생성을 막는다.

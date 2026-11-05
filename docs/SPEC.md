@@ -173,7 +173,9 @@ Assets/LobbyFlowContent/
 | CCD | `https://{CcdConfig.ProjectId}.client-api.unity3dusercontent.com/client_api/v1/environments/{CcdConfig.Environment}/buckets/{CcdConfig.BucketId}/release_by_badge/{CcdConfig.Badge}/entry_by_path/content/?path=`(`LobbyFlow.Patching.CcdConfig`를 실행 중에 읽는다) | 실기기와 출시 빌드. 빌드 창의 **프로필**로 고르고, 바꾼 뒤에는 전체 빌드와 플레이어 빌드를 다시 한다 |
 
 - CCD는 production 환경 하나, 플랫폼별 공개 버킷(`lobby-flow-windows`, `lobby-flow-android`, `lobby-flow-ios`, 2026-11-04 생성), `latest` 배지를 쓴다. 공개 여부는 생성 뒤 바꿀 수 없고, Addressables가 인증 없이 받으려면 공개여야 한다. 버킷 ID는 `CcdConfig`가 플랫폼 심볼(`UNITY_ANDROID`, `UNITY_IOS`)로 고른다. 프로젝트·버킷 ID는 공개 다운로드 주소의 일부라 저장소에 둔다. 리플렉션으로 읽으므로 `[Preserve]`로 코드 제거를 막는다.
-- 콘텐츠를 올릴 때마다 릴리스를 만들고, CCD가 새 릴리스에 `latest` 배지를 옮긴다(2026-11-05 릴리스 1에서 확인). 플레이어 버전이 바뀌어 호환이 깨지면 배지를 따로 만든다(예: `player-1`).
+- 콘텐츠를 올릴 때마다 릴리스를 만들고, CCD가 새 릴리스에 `latest` 배지를 옮긴다(2026-11-05 릴리스 1에서 확인). 콘텐츠 버전 릴리스에는 `v1`, `v2` 배지를 붙인다(업로드 때 빌드 창에서 고르거나 `ugs ccd badges create`).
+- 배지 선택: 출시 빌드는 항상 `latest`. 개발 빌드는 테스트 메뉴 **CCD 콘텐츠**에서 `v1 → v2 → latest`를 고르고(처음 `v1`, 기기에 저장), 앱을 다시 시작하면 그 배지로 카탈로그를 확인한다. Addressables가 시작할 때 주소를 한 번 읽기 때문에 실행 중에는 바꿀 수 없다. 설치한 기기에서 겨울(v1) → 봄(v2) 패치를 보기 위한 것이다.
+- 공개 저장소 정책: CCD 다운로드는 누구나, 업로드는 작성자만(서비스 계정 키는 작성자 PC 환경 변수에만 있다). 받은 사람의 버전 변경 테스트는 LocalServer로 한다(`docs/guides/local-patch-test.md`). 빌드 창은 키가 없으면 업로드를 숨기고, 키 없이 배지별 카탈로그 해시를 받아 보는 "CCD 연결 확인"을 준다. 플레이어 버전이 바뀌어 호환이 깨지면 배지를 따로 만든다(예: `player-1`).
 - `Assets/AddressableAssetsData/<Platform>/addressables_content_state.bin`은 콘텐츠 업데이트 빌드에 필요하므로 커밋한다.
 - `ServerData/`는 빌드 산출물이며 저장소에 올리지 않는다.
 
