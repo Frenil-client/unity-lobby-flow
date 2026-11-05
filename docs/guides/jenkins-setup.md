@@ -66,7 +66,7 @@ Git은 PATH에 있는 Git for Windows를 쓴다(`C:\Program Files\Git\cmd\git.ex
 | MODE | `content-release` |
 | RELEASE_PLATFORMS | `both`(Windows, Android) 또는 한 플랫폼 |
 
-시작 직후 승인(**릴리스**)을 한 번 받고, 플랫폼마다 아래를 차례로 한다.
+플랫폼마다 아래를 차례로 한다. 중간에 확인을 묻지 않으니 파라미터를 확인하고 실행한다.
 
 1. v1: `Remote/`를 `main` 상태로 맞춤 → Addressables 전체 빌드 → 플레이어 빌드와 보관 → 새 기준 파일 보관 → CCD 업로드(배지 `v1`)와 원격 검증
 2. v2: `Remote/`를 `content/v2`로 덮음 → 같은 작업 폴더에서 1번 기준으로 업데이트 빌드 → CCD 업로드(배지 `v2`, `latest`)와 원격 검증 → `Remote/` 되돌림
@@ -80,7 +80,7 @@ Git은 PATH에 있는 Git for Windows를 쓴다(`C:\Program Files\Git\cmd\git.ex
 - 단계별 Unity 로그: 빌드 결과의 **Build Artifacts ▸ ci-logs/**
 - 테스트 결과: 빌드 결과의 **Test Result**
 - APK, Windows zip: **Build Artifacts**
-- CCD 업로드 단계는 승인 버튼(**업로드**)을 누를 때까지 기다린다. 업로드 뒤 공개 주소의 카탈로그 해시가 올린 것과 같은지 자동으로 확인한다.
+- CCD 업로드 단계는 업로드 뒤 공개 주소의 카탈로그 해시가 올린 것과 같은지 자동으로 확인한다.
 
 ## 문제 해결
 

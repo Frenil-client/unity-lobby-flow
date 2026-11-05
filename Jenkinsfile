@@ -24,7 +24,7 @@ pipeline {
         choice(name: 'CONTENT', choices: ['main', 'content/v2'], description: 'custom: 원격 콘텐츠(Assets/LobbyFlowContent/Remote) 출처. content/v2 는 v2 패치를 만들 때 쓴다')
         choice(name: 'ADDRESSABLES', choices: ['update', 'full', 'none'], description: 'custom: update 는 커밋된 기준으로 콘텐츠 업데이트 빌드, full 은 기준을 새로 만든다')
         booleanParam(name: 'BUILD_PLAYER', defaultValue: true, description: 'custom: 개발 빌드(Windows 실행 파일 또는 APK)를 만들어 보관한다')
-        booleanParam(name: 'UPLOAD_CCD', defaultValue: false, description: 'custom: CCD 에 올리고 릴리스를 만든다. 실행 중에 승인을 한 번 더 묻는다')
+        booleanParam(name: 'UPLOAD_CCD', defaultValue: false, description: 'custom: CCD 에 올리고 릴리스를 만든다')
         choice(name: 'CCD_BADGE', choices: ['none', 'v1', 'v2'], description: 'custom: 새 릴리스에 붙일 콘텐츠 버전 배지(latest 는 CCD 가 옮긴다)')
     }
 
@@ -77,7 +77,6 @@ pipeline {
         stage('CCD 업로드') {
             when { expression { isCustomRun() && params.UPLOAD_CCD } }
             steps {
-                input message: "CCD(${params.PLATFORM})에 올리고 릴리스를 만들까요? latest 배지를 쓰는 플레이어가 바로 받습니다.", ok: '업로드'
                 withCcdKeys {
                     unity('ccd-upload', params.PLATFORM, uploadArgs(params.CCD_BADGE))
                 }
@@ -87,7 +86,6 @@ pipeline {
         stage('콘텐츠 릴리스') {
             when { expression { isManualRun() && params.MODE == 'content-release' } }
             steps {
-                input message: "콘텐츠 릴리스(${params.RELEASE_PLATFORMS}): v1 전체 빌드와 v2 업데이트를 CCD 에 다시 올리고 v1, v2, latest 배지를 옮깁니다. 진행할까요?", ok: '릴리스'
                 script {
                     def targets = params.RELEASE_PLATFORMS == 'both' ? ['StandaloneWindows64', 'Android'] : [params.RELEASE_PLATFORMS]
                     for (target in targets) {
