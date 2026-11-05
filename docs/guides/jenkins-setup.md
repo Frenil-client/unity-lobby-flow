@@ -72,6 +72,10 @@ Git은 PATH에 있는 Git for Windows를 쓴다(`C:\Program Files\Git\cmd\git.ex
 
 | 증상 | 조치 |
 |---|---|
+| 설치 중 Test Credentials가 `0x8007052e`(로그온 실패) | 계정 이름이나 비밀번호가 틀렸거나, 계정에 비밀번호가 없다. Windows는 비밀번호 없는 계정으로 서비스를 실행하지 못한다. 설정 ▸ 계정 ▸ 로그인 옵션 ▸ 비밀번호에서 비밀번호를 만든 뒤 다시 확인한다(PIN이 아니라 비밀번호를 넣는다) |
+| 설치 중 "does not have the privilege to logon as a service" | 계정에 "서비스로 로그온" 권한이 없다. Windows Home에는 이 권한을 주는 로컬 보안 정책 편집기가 없다. 설치는 LocalSystem으로 끝내고, 서비스(services.msc) ▸ Jenkins ▸ 속성 ▸ 로그온에서 계정을 바꾸면 Windows가 권한을 함께 준다. 그다음 서비스를 다시 시작한다 |
+| 설치 중 "Failed to find compatible Java version" | Java 경로가 JDK 폴더가 아니다. **Change**로 JDK 설치 폴더(예: `C:Program FilesJavajdk-21…`, `bin` 위 폴더)를 고른다 |
+| 첫 실행이 "Unable to find Jenkinsfile" | Jenkinsfile 이 들어간 커밋이 아직 GitHub `main`에 없다. 푸시한 뒤 다시 실행한다 |
 | Unity가 라이선스 오류로 끝남 | 서비스 계정이 라이선스를 활성화한 사용자인지 확인한다(서비스 ▸ Jenkins ▸ 속성 ▸ 로그온) |
 | `powershell` 단계에서 한글이 깨지거나 구문 오류 | `ci/*.ps1`이 UTF-8 BOM으로 저장돼 있는지 확인한다 |
 | `ugs 를 찾지 못했다` | 노드 환경 변수 `UGS_EXE` 경로를 확인한다 |

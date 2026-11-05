@@ -3,6 +3,7 @@ using System.IO;
 using LobbyFlow.Content;
 using LobbyFlow.Patching;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
@@ -149,7 +150,8 @@ namespace LobbyFlow.Tests
                     if (entry.address == address)
                         return entry;
 
-                    if (entry.IsFolder && address.StartsWith(entry.address + "/") && (best == null || entry.address.Length > best.address.Length))
+                    // IsFolder 는 저장되지 않고 Groups 창 등이 항목을 훑을 때 채워진다. 새로 연 프로젝트(Jenkins)에서는 비어 있어 에셋 데이터베이스로 본다.
+                    if (AssetDatabase.IsValidFolder(entry.AssetPath) && address.StartsWith(entry.address + "/") && (best == null || entry.address.Length > best.address.Length))
                         best = entry;
                 }
             }
