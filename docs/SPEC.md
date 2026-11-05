@@ -169,11 +169,11 @@ Assets/LobbyFlowContent/
 | 프로필 | RemoteLoadPath | 용도 |
 |---|---|---|
 | Local | 로컬 빌드 폴더(에디터 호스팅 또는 Use Existing Build) | 에디터와 오프라인 검증 |
-| LocalServer | `http://[ServerHost]:8080/[BuildTarget]`. 에디터 메뉴 **Lobby Flow ▸ 콘텐츠 서버**가 `ServerData/`를 내보낸다. 켜 둔 서버는 Play 진입 등 스크립트를 다시 읽은 뒤 자동으로 다시 연다 | CCD 연결 전 패치 과정 검증. 기기에서 받을 때는 프로필 변수 `ServerHost`를 PC IP로 바꾼다 |
-| CCD_Dev | CCD 개발 환경, 플랫폼별 버킷, `latest` 배지 | 실기기 개발 빌드 |
+| LocalServer | `http://[ServerHost]:8080/[BuildTarget]`. 에디터 메뉴 **Lobby Flow ▸ 콘텐츠 서버**가 `ServerData/`를 내보낸다. 켜 둔 서버는 Play 진입 등 스크립트를 다시 읽은 뒤 자동으로 다시 연다 | CCD 연결 전 패치 과정 검증. `ServerHost`는 `localhost`로 둔다. Android 기기는 USB로 연결하고 **콘텐츠 서버 ▸ Android 기기 연결 (adb reverse)**로 기기의 localhost:8080을 PC로 잇는다(**플레이어 빌드 ▸ Android 개발 빌드 후 기기 실행**은 이 연결을 먼저 한다). CCD 연결 때 원격 경로를 CCD로 바꾼다 |
+| CCD | `https://{CcdConfig.ProjectId}.client-api.unity3dusercontent.com/client_api/v1/environments/{CcdConfig.Environment}/buckets/{CcdConfig.BucketId}/release_by_badge/{CcdConfig.Badge}/entry_by_path/content/?path=`(`LobbyFlow.Patching.CcdConfig`를 실행 중에 읽는다) | 실기기와 출시 빌드. 메뉴 **Lobby Flow ▸ Addressables ▸ 프로필**로 고르고, 바꾼 뒤에는 전체 빌드와 플레이어 빌드를 다시 한다 |
 
-- CCD 경로 형식(예): `https://<projectId>.client-api.unity3dusercontent.com/client_api/v1/environments/<env>/buckets/<bucketId>/release_by_badge/<badge>/entry_by_path/content/?path=`. 설치한 Addressables·CCD 패키지 버전의 문서로 확인한다.
-- 버킷은 플랫폼마다 하나(Android, iOS). 콘텐츠를 올릴 때마다 릴리스를 만들고 배지를 옮긴다. 플레이어 버전이 바뀌어 호환이 깨지면 배지를 따로 만든다(예: `player-1`).
+- CCD는 production 환경 하나, 플랫폼별 공개 버킷(`lobby-flow-windows`, `lobby-flow-android`, `lobby-flow-ios`, 2026-11-04 생성), `latest` 배지를 쓴다. 공개 여부는 생성 뒤 바꿀 수 없고, Addressables가 인증 없이 받으려면 공개여야 한다. 버킷 ID는 `CcdConfig`가 플랫폼 심볼(`UNITY_ANDROID`, `UNITY_IOS`)로 고른다. 프로젝트·버킷 ID는 공개 다운로드 주소의 일부라 저장소에 둔다. 리플렉션으로 읽으므로 `[Preserve]`로 코드 제거를 막는다.
+- 콘텐츠를 올릴 때마다 릴리스를 만들고, CCD가 새 릴리스에 `latest` 배지를 옮긴다(2026-11-05 릴리스 1에서 확인). 플레이어 버전이 바뀌어 호환이 깨지면 배지를 따로 만든다(예: `player-1`).
 - `Assets/AddressableAssetsData/<Platform>/addressables_content_state.bin`은 콘텐츠 업데이트 빌드에 필요하므로 커밋한다.
 - `ServerData/`는 빌드 산출물이며 저장소에 올리지 않는다.
 
@@ -186,7 +186,9 @@ Assets/LobbyFlowContent/
 | **Unity CCD** | 월 대역폭 50GB | 채택. Addressables 프로필에 버킷·배지를 바로 연결할 수 있고, 릴리스·배지로 콘텐츠 버전을 관리한다 |
 | Cloudflare R2 | 저장 10GB, 다운로드 트래픽 무료 | 대안. 일반 HTTP 경로라 프로필 경로와 업로드 단계만 바꾸면 옮길 수 있다 |
 
-- 저장 용량의 무료 범위, 초과 시 요금, 결제 수단 등록 필요 여부는 UGS 가격 페이지에서 확인한다([미결](#10-미결-사항)).
+- 요금(2026-11-04 UGS 가격 페이지): 대역폭 월 50GB 무료, 초과 시 GB당 $0.08. 저장 용량은 별도 상한이 적혀 있지 않다. 리뷰 기사 기준으로 결제 카드 등록이 필요하다고 하며, 대시보드에서 확인한다.
+- 업로드: UGS CLI 2.0(`ugs`)의 `ugs ccd entries sync ServerData/<BuildTarget> -p <프로젝트> -e production -b <버킷> -r -n <메모>` 한 번으로 올리고 릴리스를 만든다. 지우기(`-x`)는 쓰지 않아 이전 카탈로그의 번들이 버킷에 남는다. 메뉴 **Lobby Flow ▸ CCD ▸ 현재 플랫폼 업로드와 릴리스**가 같은 명령을 부르고, CCD 프로필이 아니거나 ID가 비어 있으면 거부한다.
+- 인증: 서비스 계정(조직 역할 Cloud Content Delivery API Public Editor, 프로젝트 역할 Unity Environments Viewer). 키는 사용자 환경 변수 `UGS_CLI_SERVICE_KEY_ID`, `UGS_CLI_SERVICE_SECRET_KEY` 또는 `ugs login`으로 주고, Jenkins에서는 Credentials로 넣는다.
 - 반복 검증 중 캐시를 지우고 다시 받는 횟수가 대역폭을 쓴다. 데모 콘텐츠를 수십 MB 안으로 유지하고, 측정 기록에 받은 총량을 적는다.
 - 업로드용 키는 Jenkins Credentials에만 두고 저장소와 빌드에 넣지 않는다.
 
@@ -405,7 +407,7 @@ Boot 씬 (빌드 내장)
 |---|---|
 | 1 (완료) | 로비 플로우, 던전 왕복, 임시 로더, 요청 번호·취소·소유권 규칙, 지연·실패 주입 메뉴 |
 | 2 | Addressables 설치, 콘텐츠를 `Assets/LobbyFlowContent`로 옮기고 로컬·원격 그룹 구성, 데이터를 CSV로 전환, 로더 교체와 `Release` 경로 적용, 실제 패치 서비스. LocalServer 프로필로 v1 빌드 → `content/v2` 패치 1회 검증. Addressables Profiler로 팝업 열고 닫기 구간 캡처. Android 첫 플레이어 빌드 |
-| 3 | CCD 연결(프로필 경로와 업로드만 교체), 챕터 진입 다운로드, CCD로 v2 패치 재검증, 실기기 네트워크 끊김 검증 |
+| 3 | CCD 연결(프로필 경로와 업로드만 교체), 챕터 진입 다운로드, CCD로 v2 패치 재검증(Windows 완료, 2026-11-05), 실기기 네트워크 끊김 검증 |
 | 4 | Jenkins: 테스트, 무결성 검사, Addressables 빌드, CCD 업로드, 원격 검증, Android 빌드 |
 | 5 | iOS 빌드 연결, 30회 반복 계측과 Memory Profiler 비교, 시연 영상, README |
 
@@ -413,8 +415,8 @@ Boot 씬 (빌드 내장)
 
 ## 10. 미결 사항
 
-- [ ] CCD 저장 용량 무료 범위, 대역폭 초과 요금, 결제 수단 등록 필요 여부.
-- [ ] Unity Cloud 프로젝트 연결(조직, 프로젝트 ID)과 CCD 환경 이름.
+- [x] CCD 요금 — 대역폭 월 50GB 무료, 초과 GB당 $0.08(5.5). 결제 카드 등록 필요 여부는 대시보드에서 확인한다.
+- [x] Unity Cloud 프로젝트 연결 — 조직 `frenil`, 프로젝트 `unity-lobby-flow`(ID `9211a594-db04-43bd-bd55-c6d120db13de`). CCD 환경은 production(5.4).
 - [x] 첫 실행이 아닌 오프라인 진입 — 허용한다([6.4](#64-실패와-예외-처리)).
 - [x] 카탈로그 형식 — JSON(6.2).
 - [x] 로컬 그룹에 넣을 UI 이미지·사운드의 출처 — 빌더가 코드로 직접 그리고 합성한다.

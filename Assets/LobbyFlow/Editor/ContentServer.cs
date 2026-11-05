@@ -12,7 +12,7 @@ namespace LobbyFlow.Editor
     /// <summary>
     /// CCD 연결 전 패치 검증용 정적 파일 서버(SPEC 5.4 LocalServer 프로필). 프로젝트의 <c>ServerData/</c> 를 그대로 내보낸다.
     /// 요청마다 경로와 크기를 콘솔에 남겨, 패치 때 어떤 번들을 받았는지 확인하는 데 쓴다.
-    /// 같은 네트워크의 기기에서 받으려면 Windows 방화벽에서 이 포트를 허용한다.
+    /// Android 기기는 USB 와 adb reverse 로 기기의 localhost 를 이 서버에 잇는다(<see cref="ReverseToAndroidDevice"/>).
     /// </summary>
     public static class ContentServer
     {
@@ -97,6 +97,66 @@ namespace LobbyFlow.Editor
 
         [MenuItem(StopMenu, true)]
         private static bool CanStop() => IsRunning;
+
+        [MenuItem("Lobby Flow/콘텐츠 서버/Android 기기 연결 (adb reverse)")]
+        private static void ReverseToAndroidDeviceFromMenu() => ReverseToAndroidDevice();
+
+        /// <summary>
+        /// USB 로 연결된 Android 기기의 localhost:<see cref="Port"/> 를 이 PC 의 같은 포트로 잇는다(adb reverse).
+        /// LocalServer 프로필 주소(localhost)를 바꾸지 않고 기기에서 받을 수 있다. 기기를 다시 꽂으면 다시 잇는다.
+        /// </summary>
+        /// <returns>이었으면 true.</returns>
+        public static bool ReverseToAndroidDevice()
+        {
+            var adb = FindAdb();
+            if (adb == null)
+            {
+                Debug.LogError($"{LogPrefix} adb 를 찾지 못했다. Unity Android 모듈 또는 Android SDK 경로를 확인한다.");
+                return false;
+            }
+
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo(adb, $"reverse tcp:{Port} tcp:{Port}")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                },
+            };
+
+            using (process)
+            {
+                process.Start();
+                var error = process.StandardError.ReadToEnd();
+                if (!process.WaitForExit(10000) || process.ExitCode != 0)
+                {
+                    Debug.LogError($"{LogPrefix} adb reverse 실패(기기 연결과 USB 디버깅 허용을 확인한다): {error.Trim()}");
+                    return false;
+                }
+            }
+
+            Debug.Log($"{LogPrefix} Android 기기 localhost:{Port} → PC:{Port} 연결");
+            return true;
+        }
+
+        private static string FindAdb()
+        {
+            // Unity 가 설치한 SDK 를 먼저 쓰고, 없으면 Preferences 의 외부 SDK 경로를 본다.
+            var embedded = Path.Combine(BuildPipeline.GetPlaybackEngineDirectory(BuildTarget.Android, BuildOptions.None), "SDK");
+            foreach (var sdk in new[] { embedded, EditorPrefs.GetString("AndroidSdkRoot") })
+            {
+                if (string.IsNullOrEmpty(sdk))
+                    continue;
+
+                var adb = Path.Combine(sdk, "platform-tools", Application.platform == RuntimePlatform.WindowsEditor ? "adb.exe" : "adb");
+                if (File.Exists(adb))
+                    return adb;
+            }
+
+            return null;
+        }
 
         private static void AcceptLoop()
         {

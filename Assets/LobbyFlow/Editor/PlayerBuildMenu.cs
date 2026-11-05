@@ -23,11 +23,43 @@ namespace LobbyFlow.Editor
                 EditorUtility.RevealInFinder(path);
         }
 
+        [MenuItem("Lobby Flow/플레이어 빌드/Android 개발 빌드")]
+        private static void BuildAndroidFromMenu()
+        {
+            if (BuildAndroidDevelopment(false, out var path))
+                EditorUtility.RevealInFinder(path);
+        }
+
+        [MenuItem("Lobby Flow/플레이어 빌드/Android 개발 빌드 후 기기 실행")]
+        private static void BuildAndRunAndroidFromMenu() => BuildAndroidDevelopment(true, out _);
+
         /// <returns>성공하면 true.</returns>
         public static bool BuildWindowsDevelopment(out string path)
         {
             path = $"{OutputRoot}/Windows/LobbyFlow.exe";
             return Build(BuildTarget.StandaloneWindows64, path, BuildOptions.Development);
+        }
+
+        /// <param name="runOnDevice">USB 로 연결된 기기에 설치하고 실행한다. 실행 전에 기기의 localhost:8080 을 PC 콘텐츠 서버로 잇는다.</param>
+        /// <returns>성공하면 true.</returns>
+        public static bool BuildAndroidDevelopment(bool runOnDevice, out string path)
+        {
+            path = $"{OutputRoot}/Android/LobbyFlow.apk";
+
+            // 개발 빌드는 기기에 바로 설치하는 APK 로 만든다. 스토어용 AAB 는 출시 빌드에서 다룬다.
+            EditorUserBuildSettings.buildAppBundle = false;
+
+            var options = BuildOptions.Development;
+            if (runOnDevice)
+            {
+                // LocalServer 프로필은 localhost 다. 앱이 켜지자마자 카탈로그를 확인하므로 설치 전에 연결해 둔다.
+                if (!ContentServer.ReverseToAndroidDevice())
+                    return false;
+
+                options |= BuildOptions.AutoRunPlayer;
+            }
+
+            return Build(BuildTarget.Android, path, options);
         }
 
         private static bool Build(BuildTarget target, string path, BuildOptions options)
@@ -40,9 +72,19 @@ namespace LobbyFlow.Editor
             }
 
             // 'Build Addressables on Player Build' 를 끄고 쓰므로, 빌드된 콘텐츠가 없으면 빈 플레이어가 나온다.
-            if (!File.Exists(Path.Combine(Addressables.BuildPath, "settings.json")))
+            var runtimeSettingsPath = Path.Combine(Addressables.BuildPath, "settings.json");
+            if (!File.Exists(runtimeSettingsPath))
             {
                 Debug.LogError($"[LobbyFlow] Addressables 빌드 결과가 없다: {Addressables.BuildPath}. 전체 빌드를 먼저 한다.");
+                return false;
+            }
+
+            // 프로필을 바꾸거나 다른 플랫폼에서 빌드한 뒤 이 플랫폼을 다시 빌드하지 않으면, 이전 원격 주소(예: localhost)가 플레이어에 들어간다.
+            var aaSettings = AddressableAssetSettingsDefaultObject.Settings;
+            var remoteCatalog = aaSettings != null ? aaSettings.RemoteCatalogLoadPath.GetValue(aaSettings) : null;
+            if (!string.IsNullOrEmpty(remoteCatalog) && !File.ReadAllText(runtimeSettingsPath).Contains(remoteCatalog))
+            {
+                Debug.LogError($"[LobbyFlow] {target} Addressables 빌드가 현재 프로필({AddressablesBuildMenu.ActiveProfileName})의 원격 주소와 다르다. 이 플랫폼에서 전체 빌드를 다시 한다.");
                 return false;
             }
 

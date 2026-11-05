@@ -1,4 +1,5 @@
 using System.IO;
+using LobbyFlow.Patching;
 using TMPro;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
@@ -14,6 +15,63 @@ namespace LobbyFlow.Editor
     /// </summary>
     public static class AddressablesBuildMenu
     {
+        public const string LocalServerProfile = "LocalServer";
+        public const string CcdProfile = "CCD";
+
+        private const string LocalServerProfileMenu = "Lobby Flow/Addressables/프로필/LocalServer";
+        private const string CcdProfileMenu = "Lobby Flow/Addressables/프로필/CCD";
+
+        [MenuItem(LocalServerProfileMenu)]
+        private static void UseLocalServerProfile() => UseProfile(LocalServerProfile);
+
+        [MenuItem(CcdProfileMenu)]
+        private static void UseCcdProfile() => UseProfile(CcdProfile);
+
+        [MenuItem(LocalServerProfileMenu, true)]
+        private static bool ValidateLocalServerProfile() => MarkActiveProfile(LocalServerProfileMenu, LocalServerProfile);
+
+        [MenuItem(CcdProfileMenu, true)]
+        private static bool ValidateCcdProfile() => MarkActiveProfile(CcdProfileMenu, CcdProfile);
+
+        /// <summary>
+        /// 원격 주소 프로필을 바꾼다(SPEC 5.4). 주소는 카탈로그에 들어가므로 바꾼 뒤에는 전체 빌드와 플레이어 빌드를 다시 한다.
+        /// </summary>
+        /// <returns>프로필이 있으면 true.</returns>
+        public static bool UseProfile(string profileName)
+        {
+            var settings = AddressableAssetSettingsDefaultObject.Settings;
+            var profileId = settings != null ? settings.profileSettings.GetProfileId(profileName) : null;
+            if (string.IsNullOrEmpty(profileId))
+            {
+                Debug.LogError($"[LobbyFlow] Addressables 프로필 '{profileName}' 이 없다. 빌더의 그룹 구성을 먼저 실행한다.");
+                return false;
+            }
+
+            if (settings.activeProfileId == profileId)
+                return true;
+
+            settings.activeProfileId = profileId;
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[LobbyFlow] Addressables 프로필을 {profileName} 로 바꿨다. 전체 빌드와 플레이어 빌드를 다시 한다.");
+            return true;
+        }
+
+        public static string ActiveProfileName
+        {
+            get
+            {
+                var settings = AddressableAssetSettingsDefaultObject.Settings;
+                return settings != null ? settings.profileSettings.GetProfileName(settings.activeProfileId) : null;
+            }
+        }
+
+        private static bool MarkActiveProfile(string menu, string profileName)
+        {
+            Menu.SetChecked(menu, ActiveProfileName == profileName);
+            return true;
+        }
+
         [MenuItem("Lobby Flow/Addressables/전체 빌드 (기준 갱신)")]
         private static void BuildFullFromMenu()
         {
@@ -131,6 +189,13 @@ namespace LobbyFlow.Editor
             if (EditorApplication.isCompiling)
             {
                 Debug.LogError("[LobbyFlow] 스크립트 컴파일 중이다. 컴파일이 끝난 뒤 다시 빌드한다.");
+                return false;
+            }
+
+            // CCD 주소의 프로젝트·버킷 ID 는 실행 중에 채워지므로, 비어 있으면 빌드는 되지만 기기에서 받을 수 없다.
+            if (ActiveProfileName == CcdProfile && (string.IsNullOrEmpty(CcdConfig.ProjectId) || string.IsNullOrEmpty(CcdConfig.Current.Id)))
+            {
+                Debug.LogError($"[LobbyFlow] CCD 프로필인데 CcdConfig 의 프로젝트 ID 또는 {CcdConfig.Current.Name} 버킷 ID 가 비어 있다.");
                 return false;
             }
 
