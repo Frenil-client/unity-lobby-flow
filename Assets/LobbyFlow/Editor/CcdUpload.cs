@@ -79,7 +79,9 @@ namespace LobbyFlow.Editor
 
         private static bool RunUgs(string arguments, out string output)
         {
-            var start = new ProcessStartInfo("ugs", arguments)
+            // PATH 에 ugs 가 없는 실행 환경(Jenkins 서비스 등)은 UGS_EXE 로 실행 파일 경로를 준다.
+            var exe = Environment.GetEnvironmentVariable("UGS_EXE");
+            var start = new ProcessStartInfo(string.IsNullOrEmpty(exe) ? "ugs" : exe, arguments)
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -114,7 +116,7 @@ namespace LobbyFlow.Editor
             catch (System.ComponentModel.Win32Exception)
             {
                 output = string.Empty;
-                Debug.LogError($"{LogPrefix} ugs 를 찾지 못했다. UGS CLI 를 설치하고 PATH 에 넣은 뒤 Unity 를 다시 연다.");
+                Debug.LogError($"{LogPrefix} ugs 를 찾지 못했다. UGS CLI 를 PATH 에 넣거나 UGS_EXE 로 경로를 준 뒤 Unity 를 다시 연다.");
                 return false;
             }
         }

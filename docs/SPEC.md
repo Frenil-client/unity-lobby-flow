@@ -207,7 +207,7 @@ Assets/LobbyFlowContent/
 | `event_notice.txt` | 원격 | 첫 줄 제목, 나머지 본문 |
 
 - 형식: UTF-8, 첫 줄 머리글, 쉼표 구분. 쉼표·줄바꿈·따옴표가 든 값은 큰따옴표로 감싸고 따옴표는 두 번 쓴다. 빈 줄과 `#`로 시작하는 줄은 건너뛴다.
-- 색은 `#RRGGBB`, 참·거짓은 `true`/`false`. 비어 있는 `download_label`은 받을 것이 없는 로컬 챕터다.
+- 색은 `#RRGGBB`, 참·거짓은 `true`/`false`. 비어 있는 `download_label`은 받을 것이 없는 로컬 챕터다. 첫 칸이 `#`으로 시작하는 줄과 빈 줄은 주석으로 건너뛰므로, `#`으로 시작할 수 있는 값(색)은 첫 열에 두지 않는다.
 - 파싱 오류(머리글 누락, 중복 id, 없는 캐릭터를 가리키는 코스튬)는 Boot에서 오류로 처리하고 로비로 가지 않는다.
 - 로컬 데이터는 원격 주소를 가리킬 수 있다(챕터 2·3 씬). 이 주소는 출시 후 바꾸지 않는다. 바꾸려면 앱 업데이트다.
 - 데이터 테이블은 Boot 패치가 끝난 뒤 한 번 읽어 앱이 켜져 있는 동안 유지한다. 파싱 후 `TextAsset` 핸들은 바로 반환한다.
@@ -362,43 +362,60 @@ Boot 씬 (빌드 내장)
 
 | 노드 | 역할 | 요구 사항 |
 |---|---|---|
-| Windows (개발 PC) | 컨트롤러, 테스트, Addressables, Android 빌드, iOS Xcode 프로젝트 생성 | Unity 6000.3.9f1 + Android 모듈 + iOS 모듈, 라이선스 활성화된 사용자 계정으로 에이전트 실행 |
-| macOS | iOS 빌드(`xcodebuild archive`, IPA 내보내기) | Xcode, 서명 인증서와 프로비저닝 프로파일 |
+| Windows (개발 PC, 레이블 `unity-windows`) | 컨트롤러 겸 에이전트. 검사, 테스트, Addressables, Windows·Android 빌드, CCD 업로드 | Unity 6000.3.9f1 + Android 모듈, UGS CLI, 라이선스를 활성화한 사용자 계정으로 Jenkins 실행 |
+| macOS (예정) | iOS 빌드(`xcodebuild archive`, IPA 내보내기) | Xcode, 서명 인증서와 프로비저닝 프로파일 |
 
-- 파이프라인은 저장소의 `Jenkinsfile`로 관리한다.
-- Unity 실행은 배치 모드(`-batchmode -nographics -quit`)와 `-executeMethod`로 한다. 빌드 진입점은 `Assets/Editor/CI/` 아래 에디터 코드에 둔다.
-- Windows 서비스로 Jenkins를 돌리면 로컬 시스템 계정으로 실행되어 Unity 라이선스를 찾지 못한다. 에이전트는 라이선스를 활성화한 사용자 계정으로 실행한다.
+- 파이프라인은 저장소의 `Jenkinsfile`로 관리한다. 설치와 등록 순서는 `docs/guides/jenkins-setup.md`.
+- Jenkins는 작업 폴더에 저장소를 따로 받아 빌드하므로, 열려 있는 Unity 프로젝트와 부딪히지 않는다. 작업 폴더의 `Library/`는 지우지 않고 다음 실행에 쓴다.
+- Unity는 `ci/unity.ps1`로 배치 모드(`-batchmode -nographics -buildTarget <플랫폼>`) 실행한다. 빌드 진입점은 `LobbyFlow.Editor.CiBuild`(`Addressables`, `Player`, `Upload`)이고 빌드 창과 같은 정적 메서드를 부른다. 진입점이 종료 코드를 직접 돌려주므로 `-quit`는 붙이지 않는다.
+- Windows 서비스로 Jenkins를 돌리면 로컬 시스템 계정으로 실행되어 Unity 라이선스를 찾지 못한다. 서비스 계정을 라이선스를 활성화한 사용자로 바꾼다.
+- 스크립트(`ci/*.ps1`)는 UTF-8 BOM으로 저장한다. Windows PowerShell 5.1은 BOM이 없으면 한글을 ANSI로 읽어 구문이 깨진다.
 
 ### 8.2 단계
 
-| 단계 | 내용 | 실패 조건 |
-|---|---|---|
-| Checkout | 소스 받기, Library 캐시 유지 | — |
-| EditMode 테스트 | `-runTests -testPlatform EditMode` | 실패 테스트 1건 이상 |
-| PlayMode 테스트 | `-runTests -testPlatform PlayMode`, 지연·실패 주입 시나리오 포함 | 실패 테스트 1건 이상 |
-| 리소스 무결성 검사 | [8.3](#83-리소스-무결성-검사) 항목 | 오류 1건 이상 |
-| Addressables 빌드 | 매개변수로 전체 빌드 / 콘텐츠 업데이트 / 생략 선택 | 빌드 오류 |
-| CCD 업로드 | 플랫폼 버킷에 동기화, 릴리스 생성, 배지 이동(UGS CLI 또는 CCD 관리 API) | 업로드·릴리스 오류 |
-| 원격 검증 | 배지 주소로 카탈로그를 받아 참조 번들 존재와 크기 대조 | 누락 또는 불일치 |
-| Android 빌드 | APK(개발 빌드), 필요 시 AAB | 빌드 오류 |
-| iOS 빌드 | Windows에서 Xcode 프로젝트 생성 → macOS에서 archive | 빌드 오류 |
-| 보관 | 빌드 산출물, 테스트 결과 XML, 빌드 로그, 빌드 리포트, content_state | — |
+| 단계 | 내용 | 실패 조건 | 상태 |
+|---|---|---|---|
+| 무결성 검사 | `ci/integrity.ps1`, [8.3](#83-리소스-무결성-검사) | 오류 1건 이상 | 구현 |
+| EditMode 테스트 | `-runTests -testPlatform EditMode`, 결과 NUnit XML 게시 | 실패 테스트 1건 이상 | 구현 |
+| 원격 콘텐츠 선택 | `CONTENT=content/v2`면 `Remote/`만 v2로 덮는다(브랜치는 그대로, 끝나면 되돌림) | git 오류 | 구현 |
+| Addressables 빌드 | CCD 프로필로 `update`(커밋된 기준) / `full` / `none` | 빌드 오류, 기준 파일 없음 | 구현 |
+| 플레이어 빌드 | Windows 실행 파일(zip) 또는 APK, 개발 빌드, 보관 | 빌드 오류, Addressables 빌드가 프로필과 다름 | 구현 |
+| CCD 업로드 | 승인 입력 → Credentials의 키로 `ugs ccd entries sync -r [-u 배지]` | 업로드·릴리스 오류 | 구현 |
+| 원격 검증 | 업로드 직후 `latest`(와 고른 배지)의 카탈로그 해시를 공개 주소로 받아 로컬 빌드와 비교, CDN 반영을 기다려 다시 시도 | 해시 불일치 | 구현(해시만, 번들 크기 대조는 예정) |
+| PlayMode 테스트 | 지연·실패 주입 시나리오 | 실패 테스트 1건 이상 | 예정 |
+| iOS 빌드 | Windows에서 Xcode 프로젝트 생성 → macOS에서 archive | 빌드 오류 | 예정 |
+| 보관 | 산출물, 테스트 결과 XML, 단계별 Unity 로그(`ci-logs/`) | — | 구현 |
 
-매개변수: `PLATFORM`(Android / iOS / All), `ADDRESSABLES_MODE`(Full / Update / Skip), `PROFILE`(Local / CCD_Dev), `CCD_BADGE`, `DEVELOPMENT_BUILD`.
+매개변수: `PLATFORM`(Android / StandaloneWindows64), `CONTENT`(main / content/v2), `ADDRESSABLES`(update / full / none), `BUILD_PLAYER`, `UPLOAD_CCD`, `CCD_BADGE`(none / v1 / v2).
 
-- 콘텐츠 업데이트 모드는 직전 전체 빌드의 `addressables_content_state.bin`이 커밋돼 있어야 한다. 없으면 단계를 실패시킨다.
+- 실행 방법: 수동 실행(파라미터 선택)과 `main` 폴링(15분). 폴링으로 시작된 실행은 무결성 검사와 EditMode 테스트만 하고 빌드와 업로드는 건너뛴다. 로컬 PC라 GitHub 웹훅을 받을 공개 주소가 없어 폴링을 쓴다.
+- `full`은 업데이트 기준을 새로 만들어 이미 배포한 플레이어와 호환이 끊긴다. 콘텐츠만 바꿀 때는 `update`를 쓴다.
+- CCD 키는 Jenkins Credentials(`ugs-service-key-id`, `ugs-service-secret-key`, Secret text)에만 둔다.
 
 ### 8.3 리소스 무결성 검사
 
-- Addressables Analyze 규칙: 번들 간 중복 의존성, Resources 폴더와의 중복, 씬 의존성 중복.
-- 주소 중복, 라벨 규칙 위반, 누락 참조(Missing) 검사.
-- 그룹 위치 검사: Local 그룹이 로컬 경로, Remote 그룹이 CCD 경로를 쓰는지. Local 그룹이 업데이트 금지로 설정됐는지.
-- Boot·패치 UI가 Addressables 에셋을 참조하지 않는지.
-- 업로드 후 원격 카탈로그 기준으로 번들 존재와 크기를 대조.
+Unity 없이(`ci/integrity.ps1`):
+
+- `content/v2`가 `main`에서 갈라진 뒤 `Assets/LobbyFlowContent/Remote/` 밖을 바꾸지 않았다.
+- 플랫폼별 `addressables_content_state.bin`(Windows, Android)이 커밋돼 있다.
+- `ENABLE_JSON_CATALOG` 심볼이 Standalone, Android, iPhone에 있다.
+- 빌드 도중 상태(`preloadedAssets`, `AddressableAssetsData/link.xml`)가 커밋되지 않았다.
+- 동적 폰트 에셋이 비운 상태(글자 표 없음)로 커밋돼 있다.
+- 빌더 코드와 서비스 계정 키가 저장소에 없다.
+
+Unity 안에서(EditMode 테스트 `ContentIntegrityTests`):
+
+- 커밋된 CSV를 실제 데이터 파서로 읽어 검증한다.
+- CSV와 코드가 쓰는 모든 주소(초상, 프리팹, 챕터 씬·아이콘, 코스튬, 배너, BGM)가 폴더 항목을 거쳐 실제 파일로 이어진다.
+- 다운로드 라벨이 있는 챕터 씬은 원격 그룹 항목에 그 라벨이 붙어 있고, 로컬 챕터는 로컬 그룹에 있다. 코스튬은 `patch_boot` 라벨이 붙은 원격 항목이다.
+- 로컬 그룹은 정적 콘텐츠, 원격 그룹은 아니다.
+- CCD 프로젝트·버킷 ID가 비어 있지 않다.
+
+예정: Addressables Analyze 규칙(번들 간 중복, 씬 의존성 중복), Boot·패치 UI가 Addressables 에셋을 참조하지 않는지, 업로드 후 원격 카탈로그 기준 번들 존재와 크기 대조.
 
 ### 8.4 기능 테스트 추가 규칙
 
-- 작업 중 추가하는 기능 테스트는 EditMode 또는 PlayMode 테스트 어셈블리에 넣으면 파이프라인에 자동으로 포함된다.
+- 작업 중 추가하는 기능 테스트는 `Assets/LobbyFlow/Tests/EditMode`(또는 이후 PlayMode 테스트 어셈블리)에 넣으면 파이프라인에 자동으로 포함된다.
 - 실기기에서만 확인할 수 있는 항목(실제 네트워크 끊김, 메모리 관측)은 자동화하지 않고 수동 검증 기록으로 남긴다.
 
 ---
@@ -429,7 +446,7 @@ Boot 씬 (빌드 내장)
 - [ ] Mac에서 iOS 빌드 방식: Windows가 만든 Xcode 프로젝트를 넘겨받을지, Mac에 Unity를 설치해 직접 빌드할지.
 - [ ] Apple Developer 계정 여부. 무료 계정은 실기기 설치가 7일 서명으로 제한되고 IPA 배포용 내보내기가 안 된다.
 - [ ] iOS 실기기(iPhone/iPad) 보유 여부.
-- [ ] Jenkins 설치 위치(개발 PC 상시 실행 여부).
+- [x] Jenkins 설치 위치 — 개발 PC에 직접 설치, 라이선스를 활성화한 사용자 계정으로 실행(8.1).
 
 ---
 

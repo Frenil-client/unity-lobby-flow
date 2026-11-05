@@ -28,6 +28,8 @@ sysinfo.txt
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/link.xml
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/link.xml.meta
 /[Ss]erverData/
+# Jenkins 단계별 Unity 로그와 테스트 결과
+/ci-logs/
 # Android 네이티브 빌드(Gradle/CMake prefab) 임시 폴더
 /.utmp/
 InitTestScene*.unity
