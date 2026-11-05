@@ -59,6 +59,20 @@ Git은 PATH에 있는 Git for Windows를 쓴다(`C:\Program Files\Git\cmd\git.ex
 | v1 APK 만들기 | Android | main | none | 켬 | 끔 | none |
 | v2 패치를 CCD에 배포 | Android | content/v2 | update | 끔 | 켬 | v2 |
 
+`MODE=custom`일 때 위 표의 파라미터를 쓴다. 기준(v1)과 v2 패치를 처음부터 다시 만들어야 할 때(번들 이름 규칙이나 로컬 콘텐츠가 바뀌었을 때)는 `MODE=content-release`를 쓴다.
+
+| 파라미터 | 값 |
+|---|---|
+| MODE | `content-release` |
+| RELEASE_PLATFORMS | `both`(Windows, Android) 또는 한 플랫폼 |
+
+시작 직후 승인(**릴리스**)을 한 번 받고, 플랫폼마다 아래를 차례로 한다.
+
+1. v1: `Remote/`를 `main` 상태로 맞춤 → Addressables 전체 빌드 → 플레이어 빌드와 보관 → 새 기준 파일 보관 → CCD 업로드(배지 `v1`)와 원격 검증
+2. v2: `Remote/`를 `content/v2`로 덮음 → 같은 작업 폴더에서 1번 기준으로 업데이트 빌드 → CCD 업로드(배지 `v2`, `latest`)와 원격 검증 → `Remote/` 되돌림
+
+끝나면 **Build Artifacts ▸ ci-logs/baseline/<Windows|Android>/addressables_content_state.bin**이 새 기준이다. 저장소의 같은 경로(`Assets/AddressableAssetsData/<플랫폼>/`) 파일과 다르면 받아서 덮어쓰고 커밋한다. 커밋하지 않으면 이후 `update` 실행이 이전 기준을 쓴다. 같은 커밋에서 다시 실행하면 번들과 기준이 같게 나오는 것을 전제로 한다(공통 번들 이름 고정, SPEC 5.2).
+
 `main`에 커밋이 올라오면 15분 안에 폴링으로 무결성 검사와 EditMode 테스트가 자동으로 돈다.
 
 ## 6. 확인할 곳

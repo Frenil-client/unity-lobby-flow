@@ -387,7 +387,9 @@ Boot 씬 (빌드 내장)
 | iOS 빌드 | Windows에서 Xcode 프로젝트 생성 → macOS에서 archive | 빌드 오류 | 예정 |
 | 보관 | 산출물, 테스트 결과 XML, 단계별 Unity 로그(`ci-logs/`) | — | 구현 |
 
-매개변수: `PLATFORM`(Android / StandaloneWindows64), `CONTENT`(main / content/v2), `ADDRESSABLES`(update / full / none), `BUILD_PLAYER`, `UPLOAD_CCD`, `CCD_BADGE`(none / v1 / v2).
+매개변수: `MODE`(custom / content-release), `RELEASE_PLATFORMS`(both / StandaloneWindows64 / Android), custom용 `PLATFORM`, `CONTENT`(main / content/v2), `ADDRESSABLES`(update / full / none), `BUILD_PLAYER`, `UPLOAD_CCD`, `CCD_BADGE`(none / v1 / v2).
+
+- `MODE=content-release`: 승인 한 번 뒤 플랫폼마다 v1 전체 빌드 → 플레이어 → CCD v1 → `Remote/`를 v2로 덮기 → 같은 작업 폴더에서 그 기준으로 업데이트 빌드 → CCD v2(latest)를 한 실행에서 한다. Jenkins는 실행마다 추적 파일을 커밋 상태로 되돌리므로, 실행을 나누면 v2 업데이트가 이전 기준을 쓰게 된다. 그래서 한 실행에 묶었다. 새 기준 파일은 `ci-logs/baseline/`로 보관하고, 저장소와 다르면 사람이 받아 커밋한다. 번들 이름 규칙이나 로컬 콘텐츠를 바꿔 기준을 다시 만들 때 쓴다(2026-11-05 Windows·Android 기준을 손으로 다시 만든 뒤 추가).
 
 - 실행 방법: 수동 실행(파라미터 선택)과 `main` 폴링(15분). 폴링으로 시작된 실행은 무결성 검사와 EditMode 테스트만 하고 빌드와 업로드는 건너뛴다. 로컬 PC라 GitHub 웹훅을 받을 공개 주소가 없어 폴링을 쓴다.
 - `full`은 업데이트 기준을 새로 만들어 이미 배포한 플레이어와 호환이 끊긴다. 콘텐츠만 바꿀 때는 `update`를 쓴다.
