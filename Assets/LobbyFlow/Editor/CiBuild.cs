@@ -56,7 +56,10 @@ namespace LobbyFlow.Editor
             return VerifyRemoteCatalog(CcdConfig.LatestBadge) && (badge == null || VerifyRemoteCatalog(badge));
         });
 
-        /// <summary>배지가 가리키는 릴리스의 카탈로그 해시를 받아 로컬 빌드 결과와 비교한다. CDN 반영을 기다려 몇 번 다시 받는다.</summary>
+        /// <summary>
+        /// 배지가 가리키는 릴리스의 카탈로그 해시를 받아 로컬 빌드 결과와 비교한다. 배지를 옮긴 뒤 공개 주소에 반영되기까지
+        /// 1~2분 걸려(2026-11-05 측정) 10초 간격으로 최대 4분 다시 받는다.
+        /// </summary>
         private static bool VerifyRemoteCatalog(string badge)
         {
             var settings = AddressableAssetSettingsDefaultObject.Settings;
@@ -66,7 +69,7 @@ namespace LobbyFlow.Editor
             var url = CcdConfig.EntryUrl(CcdConfig.Current, badge, fileName);
 
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            for (var attempt = 1; attempt <= 6; attempt++)
+            for (var attempt = 1; attempt <= 24; attempt++)
             {
                 try
                 {
@@ -84,7 +87,7 @@ namespace LobbyFlow.Editor
                     Debug.Log($"{LogPrefix} 원격 해시를 받지 못했다({badge}, {attempt}회): {e.GetBaseException().Message}");
                 }
 
-                Thread.Sleep(5000);
+                Thread.Sleep(10000);
             }
 
             return Fail($"원격 검증 실패({badge}): {url}");

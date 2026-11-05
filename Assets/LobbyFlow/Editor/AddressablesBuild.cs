@@ -20,6 +20,12 @@ namespace LobbyFlow.Editor
         public const string CcdProfile = "CCD";
 
         /// <summary>
+        /// 공통 번들(내장 셰이더, 스크립트) 이름 접두어. 기본값(프로젝트 폴더 이름 해시)은 폴더가 다른 Jenkins 작업 폴더나 다른 PC 에서
+        /// 이름이 달라져 그에 의존하는 번들 해시까지 바뀌므로, 로컬에서 올린 CCD 콘텐츠와 다른 곳에서 만든 플레이어가 맞지 않게 된다.
+        /// </summary>
+        public const string SharedBundlePrefix = "lobbyflow";
+
+        /// <summary>
         /// 원격 주소 프로필을 바꾼다(SPEC 5.4). 주소는 카탈로그에 들어가므로 바꾼 뒤에는 전체 빌드와 플레이어 빌드를 다시 한다.
         /// </summary>
         /// <returns>프로필이 있으면 true.</returns>

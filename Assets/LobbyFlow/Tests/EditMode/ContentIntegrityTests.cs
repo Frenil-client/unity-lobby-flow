@@ -5,6 +5,7 @@ using LobbyFlow.Patching;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
+using UnityEditor.AddressableAssets.Build;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 
@@ -104,6 +105,16 @@ namespace LobbyFlow.Tests
                 Assert.That(update, Is.Not.Null, $"{group.Name} 에 콘텐츠 업데이트 설정이 없다");
                 Assert.That(update.StaticContent, Is.EqualTo(!IsRemote(group)), $"{group.Name} 의 정적 콘텐츠 설정이 원격 여부와 맞지 않다");
             }
+        }
+
+        [Test]
+        public void SharedBundleNamesDoNotDependOnProjectFolder()
+        {
+            // 기본값(프로젝트 폴더 이름 해시)이면 Jenkins 작업 폴더와 로컬 폴더에서 번들 해시가 달라진다(SPEC 5.2).
+            Assert.That(_settings.BuiltInBundleNaming, Is.EqualTo(BuiltInBundleNaming.Custom));
+            Assert.That(_settings.BuiltInBundleCustomNaming, Is.EqualTo(LobbyFlow.Editor.AddressablesBuild.SharedBundlePrefix));
+            Assert.That(_settings.MonoScriptBundleNaming, Is.EqualTo(MonoScriptBundleNaming.Custom));
+            Assert.That(_settings.MonoScriptBundleCustomNaming, Is.EqualTo(LobbyFlow.Editor.AddressablesBuild.SharedBundlePrefix));
         }
 
         [Test]

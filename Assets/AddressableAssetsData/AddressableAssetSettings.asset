@@ -15,7 +15,7 @@ MonoBehaviour:
   m_DefaultGroup: 72e1526ab95ca114eb6e399fafa60bcb
   m_currentHash:
     serializedVersion: 2
-    Hash: 00000000000000000000000000000000
+    Hash: 27a677031d73ba84b0495ec8ae4b42ca
   m_OptimizeCatalogSize: 0
   m_BuildRemoteCatalog: 1
   m_BundleLocalCatalog: 0
@@ -46,11 +46,11 @@ MonoBehaviour:
   m_ContiguousBundles: 1
   m_StripUnityVersionFromBundleBuild: 0
   m_DisableVisibleSubAssetRepresentations: 0
-  m_BuiltInBundleNaming: 0
-  mBuiltInBundleCustomNaming: 
-  m_MonoScriptBundleNaming: 0
+  m_BuiltInBundleNaming: 2
+  mBuiltInBundleCustomNaming: lobbyflow
+  m_MonoScriptBundleNaming: 2
   m_CheckForContentUpdateRestrictionsOption: 0
-  m_MonoScriptBundleCustomNaming: 
+  m_MonoScriptBundleCustomNaming: lobbyflow
   m_RemoteCatalogBuildPath:
     m_Id: e45a5759c9b61d14388d00de16ec2d53
   m_RemoteCatalogLoadPath:
