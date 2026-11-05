@@ -15,8 +15,13 @@ MonoBehaviour:
   m_GroupName: Local_Chapter01
   m_GUID: c93be7d83993f774eb7cd6bc5a893a37
   m_SerializeEntries:
-  - m_GUID: 82ef0158569e929469f0eee0ead8c507
-    m_Address: Chapter01
+  - m_GUID: 9fffed70cc589c340af57209277da505
+    m_Address: Chapter01/Chapter01.unity
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b60ee29558ad68249a8e1143cb1e73b1
+    m_Address: Chapter01/Materials
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

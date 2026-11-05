@@ -108,6 +108,44 @@ namespace LobbyFlow.Tests
         }
 
         [Test]
+        public void FolderEntriesDoNotMixScenesWithOtherAssets()
+        {
+            // 폴더 항목의 번들 ID 는 첫 하위 항목 기준이라, 씬과 다른 에셋이 섞이면 기준 파일에 다른 에셋도 씬 번들로 기록되고
+            // 콘텐츠 업데이트 빌드가 바뀌지 않은 정적 그룹의 assets 번들 위치를 씬 번들로 바꿔 쓴다(SPEC 5.2). 씬은 파일 항목으로 둔다.
+            var mixed = new List<string>();
+            foreach (var group in _settings.groups)
+            {
+                if (group == null)
+                    continue;
+
+                foreach (var entry in group.entries)
+                {
+                    if (!AssetDatabase.IsValidFolder(entry.AssetPath))
+                        continue;
+
+                    var hasScene = false;
+                    var hasOther = false;
+                    foreach (var guid in AssetDatabase.FindAssets(string.Empty, new[] { entry.AssetPath }))
+                    {
+                        var path = AssetDatabase.GUIDToAssetPath(guid);
+                        if (AssetDatabase.IsValidFolder(path))
+                            continue;
+
+                        if (path.EndsWith(".unity"))
+                            hasScene = true;
+                        else
+                            hasOther = true;
+                    }
+
+                    if (hasScene && hasOther)
+                        mixed.Add($"{group.Name}: {entry.AssetPath}");
+                }
+            }
+
+            Assert.That(mixed, Is.Empty, "씬과 다른 에셋이 한 폴더 항목에 있다");
+        }
+
+        [Test]
         public void SharedBundleNamesDoNotDependOnProjectFolder()
         {
             // 기본값(프로젝트 폴더 이름 해시)이면 Jenkins 작업 폴더와 로컬 폴더에서 번들 해시가 달라진다(SPEC 5.2).

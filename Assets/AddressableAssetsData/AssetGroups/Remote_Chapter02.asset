@@ -15,8 +15,14 @@ MonoBehaviour:
   m_GroupName: Remote_Chapter02
   m_GUID: ee9a076e455d764458fba553b2f08972
   m_SerializeEntries:
-  - m_GUID: 09d84099fa3b55c46aa8536d2756968a
-    m_Address: Chapter02
+  - m_GUID: 65cf3ce530eceb94d9e7bd4a7ed00d45
+    m_Address: Chapter02/Materials
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - chapter02
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 897d84c529b004344a31b561fc08d63c
+    m_Address: Chapter02/Chapter02.unity
     m_ReadOnly: 0
     m_SerializedLabels:
     - chapter02

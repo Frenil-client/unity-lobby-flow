@@ -132,21 +132,22 @@ Assets/LobbyFlowContent/
    └─ Data/            (데이터)    costumes.csv, event_notice.txt
 ```
 
-| 그룹 | 폴더 항목(주소) | 묶음 방식 |
+| 그룹 | 항목(주소) | 묶음 방식 |
 |---|---|---|
 | Local_UI | `Local/UI` (`UI`) | 함께 |
 | Local_Audio | `Local/Audio` (`Audio`) | 함께 |
 | Local_Fonts | `Local/Fonts` (`Fonts`) | 함께 |
 | Local_Characters | `Characters/Common`, `Characters/knight` … 캐릭터마다 하나 | 항목마다 |
-| Local_Chapter01 | `Local/Chapter01` (`Chapter01`) | 함께 |
+| Local_Chapter01 | 씬 파일 `Local/Chapter01/Chapter01.unity` (`Chapter01/Chapter01.unity`), `Local/Chapter01/Materials` (`Chapter01/Materials`) | 함께 |
 | Local_Data | `Local/Data` (`LocalData`) | 함께 |
-| Remote_Chapter02 | `Remote/Chapter02` (`Chapter02`) | 함께 |
-| Remote_Chapter03 | `Remote/Chapter03` (`Chapter03`) | 함께 |
+| Remote_Chapter02 | 씬 파일 `Chapter02/Chapter02.unity`, `Remote/Chapter02/Materials` (`Chapter02/Materials`) | 함께 |
+| Remote_Chapter03 | 씬 파일 `Chapter03/Chapter03.unity`, `Remote/Chapter03/Materials` (`Chapter03/Materials`) | 함께 |
 | Remote_Season | `Remote/Season/Costumes` (`Costumes`), `Remote/Season/Event` (`Event`) | 항목마다 |
 | Remote_Data | `Remote/Data` (`RemoteData`) | 함께 |
 
 - 그룹에는 폴더 단위로 등록한다. 안의 파일은 `Characters/knight/Character_knight.prefab`처럼 폴더 주소 아래 상대 경로가 주소가 된다. v2에서 폴더 안에 파일이 늘어나도 그룹 설정 파일은 바뀌지 않는다.
 - 폴더 항목 하나는 번들 하나다. "항목마다"로 묶어도 폴더 안 파일은 같은 번들에 들어가므로, 따로 받거나 내릴 단위는 하위 폴더로 나눠 각각 등록한다. 원격의 하위 폴더 구성은 v1에서 정하고 v2는 기존 폴더 안에서만 파일을 바꾸거나 더한다.
+- 씬과 다른 에셋을 한 폴더 항목에 두지 않는다. 챕터는 씬 파일과 `Materials` 폴더를 따로 등록하고 다운로드 라벨은 둘 다에 붙인다. Addressables 2.8.1은 폴더 항목의 번들 ID를 첫 하위 항목(씬) 기준으로 정하고 하위 항목이 모두 물려받는다. 그래서 기준 파일에 재질도 씬 번들에 있는 것으로 기록되고, 콘텐츠 업데이트 빌드가 바뀌지 않은 정적 그룹 항목을 그 기록으로 되돌리면서 `local_chapter01_assets` 번들 위치를 씬 번들로 바꿔 썼다. v2 카탈로그에서 챕터 1 재질이 씬 번들을 가리키고 assets 번들이 빠졌다(2026-11-05 Jenkins 빌드 #7과 로컬 번들 비교 중 발견, Windows·Android 둘 다. 원격 챕터 2·3은 정상). EditMode 테스트가 이 구성을 검사한다.
 - Boot 씬, 패치 팝업, 로딩 오버레이, UI 시스템 설정, 버튼음은 Addressables가 아니라 빌드 씬과 `Resources`(또는 그것이 직접 참조하는 에셋)에 둔다. 카탈로그를 받기 전에 필요하기 때문이다.
 - 로비 씬도 빌드 씬으로 둔다. 로비가 쓰는 리소스(초상, BGM, 배너)는 Addressables로 로드하고 로비 화면이 반환한다. 챕터 씬은 Addressables 씬이며 빌드 설정에 넣지 않는다.
 - 번들 안 일부만 반환해도 번들 전체가 내려가지 않으므로([7.3](#73-번들-단위-메모리)) 수명이 다른 것은 같은 번들에 넣지 않는다. 코스튬은 한 번들이라 하나만 써도 코스튬 번들 전체가 올라온다(데모 규모에서 허용).
@@ -163,7 +164,7 @@ Assets/LobbyFlowContent/
 | `patch_boot` | `Costumes`, `Event`, `RemoteData` | Boot 패치 다운로드 대상 |
 | `chapter02`, `chapter03` | `Remote/Chapter02`, `Remote/Chapter03` | 챕터 진입 시 다운로드 대상 |
 
-라벨은 폴더 항목에 붙여 안의 파일 전체에 적용한다. 코스튬 목록은 라벨이 아니라 `costumes.csv`로 조회한다.
+라벨은 항목에 붙여 폴더 항목이면 안의 파일 전체에 적용한다. 챕터 라벨은 씬 항목과 `Materials` 항목에 모두 붙인다. 코스튬 목록은 라벨이 아니라 `costumes.csv`로 조회한다.
 
 ### 5.4 프로필과 경로
 
@@ -412,6 +413,7 @@ Unity 안에서(EditMode 테스트 `ContentIntegrityTests`):
 - CSV와 코드가 쓰는 모든 주소(초상, 프리팹, 챕터 씬·아이콘, 코스튬, 배너, BGM)가 폴더 항목을 거쳐 실제 파일로 이어진다.
 - 다운로드 라벨이 있는 챕터 씬은 원격 그룹 항목에 그 라벨이 붙어 있고, 로컬 챕터는 로컬 그룹에 있다. 코스튬은 `patch_boot` 라벨이 붙은 원격 항목이다.
 - 로컬 그룹은 정적 콘텐츠, 원격 그룹은 아니다.
+- 폴더 항목 안에 씬과 다른 에셋이 함께 있지 않다(5.2).
 - CCD 프로젝트·버킷 ID가 비어 있지 않다.
 
 예정: Addressables Analyze 규칙(번들 간 중복, 씬 의존성 중복), Boot·패치 UI가 Addressables 에셋을 참조하지 않는지, 업로드 후 원격 카탈로그 기준 번들 존재와 크기 대조.
