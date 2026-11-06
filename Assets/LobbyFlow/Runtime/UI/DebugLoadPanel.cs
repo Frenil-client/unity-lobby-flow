@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LobbyFlow.Content;
+using LobbyFlow.Diagnostics;
 using LobbyFlow.Loading;
 using LobbyFlow.Patching;
 using LobbyFlow.Scenes;
@@ -31,6 +32,8 @@ namespace LobbyFlow.UI
         [SerializeField] private Button _rebootButton;
         [SerializeField] private TMP_Text _counters;
 
+        private Button _repeatPopupButton;
+        private Button _repeatSceneButton;
         private string _shown;
 
         private void Awake()
@@ -43,6 +46,12 @@ namespace LobbyFlow.UI
 
             _instance = this;
             DontDestroyOnLoad(gameObject);
+
+            // 반복 계측 버튼은 기존 버튼을 복제해 붙인다. 씬과 프리팹을 다시 만들지 않아도 된다. 리스너를 달기 전에 복제한다.
+            _repeatPopupButton = CloneButton(_rebootButton, "RepeatPopup");
+            _repeatSceneButton = CloneButton(_rebootButton, "RepeatScene");
+            _repeatPopupButton.onClick.AddListener(RepeatRunner.RunPopupCycles);
+            _repeatSceneButton.onClick.AddListener(RepeatRunner.RunSceneCycles);
 
             _toggleButton.onClick.AddListener(() => _body.SetActive(!_body.activeSelf));
             _delayButton.onClick.AddListener(LoadFaultSettings.CycleDelay);
@@ -120,15 +129,30 @@ namespace LobbyFlow.UI
                 ? $"CCD 콘텐츠: {CcdConfig.Badge}"
                 : $"CCD 콘텐츠: {CcdConfig.Badge} → {CcdConfig.TestBadge} (재시작 후)");
             SetLabel(_rebootButton, "Boot 다시 실행");
+            SetLabel(_repeatPopupButton, $"반복 {RepeatRunner.DefaultCount}회: 상세 팝업 열고 닫기");
+            SetLabel(_repeatSceneButton, $"반복 {RepeatRunner.DefaultCount}회: 챕터 1 왕복");
+            _repeatPopupButton.interactable = !RepeatRunner.IsRunning;
+            _repeatSceneButton.interactable = !RepeatRunner.IsRunning;
 
             // 같은 값이면 TMP_Text 에 다시 쓰지 않아 매 프레임 메시 재생성을 막는다.
             var text = $"보유 리소스 {ResourceCounters.LiveAssets} · 인스턴스 {ResourceCounters.LiveInstances}\n" +
                        $"누적 로드 {ResourceCounters.TotalAcquired} · 늦은 결과 반환 {ResourceCounters.StaleReleased}";
+            if (!string.IsNullOrEmpty(RepeatRunner.Status))
+                text += $"\n{RepeatRunner.Status}";
             if (text != _shown)
             {
                 _shown = text;
                 _counters.text = text;
             }
+        }
+
+        private static Button CloneButton(Button source, string name)
+        {
+            var copy = Instantiate(source, source.transform.parent, false);
+            copy.name = name;
+            copy.onClick.RemoveAllListeners();
+            copy.transform.SetSiblingIndex(source.transform.GetSiblingIndex() + 1);
+            return copy;
         }
 
         private static void SetLabel(Button button, string text)

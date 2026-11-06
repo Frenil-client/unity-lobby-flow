@@ -73,7 +73,7 @@ Git은 PATH에 있는 Git for Windows를 쓴다(`C:\Program Files\Git\cmd\git.ex
 
 끝나면 **Build Artifacts ▸ ci-logs/baseline/<Windows|Android>/addressables_content_state.bin**이 새 기준이다. 저장소의 같은 경로(`Assets/AddressableAssetsData/<플랫폼>/`) 파일과 다르면 받아서 덮어쓰고 커밋한다. 커밋하지 않으면 이후 `update` 실행이 이전 기준을 쓴다. 같은 커밋에서 다시 실행하면 번들과 기준이 같게 나오는 것을 전제로 한다(공통 번들 이름 고정, SPEC 5.2).
 
-`main`에 커밋이 올라오면 15분 안에 폴링으로 무결성 검사와 EditMode 테스트가 자동으로 돈다.
+`main`에 커밋이 올라오면 15분 안에 폴링으로 무결성 검사와 EditMode, PlayMode 테스트가 자동으로 돈다.
 
 ## 6. 확인할 곳
 

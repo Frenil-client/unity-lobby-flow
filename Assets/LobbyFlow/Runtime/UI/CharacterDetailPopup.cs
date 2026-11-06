@@ -80,6 +80,9 @@ namespace LobbyFlow.UI
             ShowCharacter();
         }
 
+        /// <summary>현재 미리보기 상태. 반복 계측이 로드 완료를 기다릴 때 쓴다.</summary>
+        public PreviewState PreviewState => _presenter?.State ?? PreviewState.Idle;
+
         protected override void OnClosing(UIResult result) => Teardown();
 
         private void OnDestroy() => Teardown();

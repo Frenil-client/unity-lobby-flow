@@ -41,7 +41,7 @@ namespace LobbyFlow.Editor
         });
 
         /// <summary>
-        /// 현재 플랫폼 버킷에 올리고 릴리스를 만든 뒤, 공개 주소의 카탈로그 해시가 올린 것과 같은지 확인한다.
+        /// 현재 플랫폼 버킷에 올리고 릴리스를 만든 뒤, 공개 주소의 카탈로그 해시가 올린 것과 같은지, 올린 파일이 모두 같은 크기로 있는지 확인한다.
         /// <c>-lobbyBadge v1|v2</c>(선택), <c>-lobbyNotes 메모</c>(선택). 키는 Jenkins Credentials 가 환경 변수로 넣는다.
         /// </summary>
         public static void Upload() => Run(() =>
@@ -53,8 +53,55 @@ namespace LobbyFlow.Editor
             if (!CcdUpload.UploadAndRelease(Arg("lobbyNotes", $"Jenkins {CcdUpload.DefaultReleaseNotes}"), badge))
                 return false;
 
-            return VerifyRemoteCatalog(CcdConfig.LatestBadge) && (badge == null || VerifyRemoteCatalog(badge));
+            return VerifyRemoteCatalog(CcdConfig.LatestBadge) && (badge == null || VerifyRemoteCatalog(badge))
+                && VerifyRemoteFiles(badge ?? CcdConfig.LatestBadge);
         });
+
+        /// <summary>
+        /// 원격 빌드 폴더의 파일(카탈로그, 번들)이 배지가 가리키는 릴리스에 모두 있고 크기가 같은지 본다.
+        /// 카탈로그 해시가 같아도 번들이 빠지면 받는 쪽에서만 실패하므로 업로드 직후 여기서 막는다.
+        /// </summary>
+        private static bool VerifyRemoteFiles(string badge)
+        {
+            var settings = AddressableAssetSettingsDefaultObject.Settings;
+            var folder = settings.RemoteCatalogBuildPath.GetValue(settings);
+            var files = Directory.GetFiles(folder);
+            var problems = new System.Collections.Generic.List<string>();
+            long totalBytes = 0;
+
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            foreach (var path in files)
+            {
+                var name = Path.GetFileName(path);
+                var expected = new FileInfo(path).Length;
+                totalBytes += expected;
+                try
+                {
+                    using var response = http.GetAsync(CcdConfig.EntryUrl(CcdConfig.Current, badge, name), HttpCompletionOption.ResponseHeadersRead)
+                        .GetAwaiter().GetResult();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        problems.Add($"{name}: HTTP {(int)response.StatusCode}");
+                        continue;
+                    }
+
+                    var length = response.Content.Headers.ContentLength
+                                 ?? response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult().LongLength;
+                    if (length != expected)
+                        problems.Add($"{name}: 크기 {length} != {expected}");
+                }
+                catch (Exception e)
+                {
+                    problems.Add($"{name}: {e.GetBaseException().Message}");
+                }
+            }
+
+            if (problems.Count > 0)
+                return Fail($"원격 파일 검증 실패({badge}) {problems.Count}/{files.Length}개: {string.Join("; ", problems)}");
+
+            Debug.Log($"{LogPrefix} 원격 파일 검증 통과({badge}): {files.Length}개, {totalBytes} bytes");
+            return true;
+        }
 
         /// <summary>
         /// 배지가 가리키는 릴리스의 카탈로그 해시를 받아 로컬 빌드 결과와 비교한다. 배지를 옮긴 뒤 공개 주소에 반영되기까지

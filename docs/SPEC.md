@@ -137,6 +137,7 @@ Assets/LobbyFlowContent/
 | Local_UI | `Local/UI` (`UI`) | 함께 |
 | Local_Audio | `Local/Audio` (`Audio`) | 함께 |
 | Local_Fonts | `Local/Fonts` (`Fonts`) | 함께 |
+| Local_Shared | 파일 항목 3개: URP Lit 셰이더(`Shared/URPLit`), Input System 기본 입력 액션(`Shared/DefaultInputActions`), 버튼음 `Assets/LobbyFlow/Audio/Click.wav`(`Shared/Click`) | 함께 |
 | Local_Characters | `Characters/Common`, `Characters/knight` … 캐릭터마다 하나 | 항목마다 |
 | Local_Chapter01 | 씬 파일 `Local/Chapter01/Chapter01.unity` (`Chapter01/Chapter01.unity`), `Local/Chapter01/Materials` (`Chapter01/Materials`) | 함께 |
 | Local_Data | `Local/Data` (`LocalData`) | 함께 |
@@ -154,6 +155,7 @@ Assets/LobbyFlowContent/
 - 폰트는 로컬 그룹(`Local_Fonts`)에 둔다. Addressables가 아닌 폰트를 여러 씬 번들이 참조하면 번들마다 복사본이 들어간다. 실제로 v1에서 원본 TTF(직렬화 4.69MB)가 챕터 1·2·3 씬 번들에 각각 들어가, LZ4 압축 후 씬 번들 하나가 약 2.8MB로 챕터 다운로드 크기 대부분을 차지했다(빌드 리포트로 확인). 빌드 씬과 UI 프리팹도 같은 폰트를 쓰므로 플레이어 데이터와 로컬 번들에는 한 벌씩 들어간다(둘 다 앱 내장, 다운로드 없음).
 - 폰트 에셋은 동적 모드다. 실행 중 쓰는 글자만 아틀라스에 넣는다. 디스크에는 항상 비운 상태로 저장하고(저장 직전 보정, `DynamicFontSaveGuard`), Addressables 빌드 메뉴와 플레이어 빌드 직전에도 비운다. 비우지 않으면 에디터 플레이로 쌓인 글자 때문에 로컬 폰트 번들 해시가 바뀌어 콘텐츠 업데이트가 정적 그룹 변경으로 본다.
 - 공통 번들(내장 셰이더 `unitybuiltinassets`, 스크립트 `monoscripts`) 이름 접두어는 `lobbyflow`로 고정한다. Addressables 기본값은 프로젝트 폴더 이름의 해시라, 폴더 이름이 다른 Jenkins 작업 폴더(`lobby-flow`)에서 공통 번들과 그에 의존하는 씬·폰트 번들 해시가 로컬(`unity-lobby-flow`)과 달라졌다. 그러면 한쪽에서 올린 CCD 콘텐츠를 다른 쪽에서 만든 플레이어가 받지 못한다(2026-11-05 Jenkins 빌드 #4에서 발견). EditMode 테스트가 이 설정을 검사한다.
+- 여러 번들이 함께 쓰는 엔진·패키지 에셋은 `Local_Shared` 그룹에 파일 항목으로 둔다. 폴더가 그룹 경계라는 규칙의 예외로, 콘텐츠 폴더 밖(패키지, `Assets/LobbyFlow/Audio`)의 파일을 경로로 등록한다. 그룹에 넣지 않으면 쓰는 번들마다 복사된다. 실제로 재질을 가진 번들 8개(챕터 1·2·3, 캐릭터 4, 코스튬 1)에 URP Lit 셰이더와 대체 셰이더가 약 50KB씩 따로 들어 있었고(2026-11-06 번들을 풀어 확인), 함께 로드된 번들 수만큼 메모리에도 따로 올라온다. Analyze 중복 검사(8.3)를 처음 돌렸을 때는 챕터 씬마다 있는 EventSystem의 기본 입력 액션과 버튼 효과음(`ClickSound`가 직접 참조)이 챕터 씬 번들마다 복사된 것도 나왔다. 빌드 씬(Boot, 로비)도 입력 액션과 버튼음을 직접 쓰므로 플레이어 데이터에 한 벌 더 있다(폰트와 같이 앱 내장이라 허용). 원격 번들은 이 로컬 번들을 참조만 한다.
 - 셰이더에 D3D11 디버그 정보(`#pragma enable_d3d11_debug_symbols`)를 넣지 않는다. TMP Essentials의 `TMP_SDF-Mobile.shader`가 이 줄을 기본으로 갖고 있어, DX11 컴파일 결과에 디버그 청크(SPDB)가 들어갔다. 셰이더 본문(SHDR)이 같아도 이 청크는 작업 폴더나 셰이더 캐시에 따라 달라졌다(컴파일마다 달라지는지, 경로 때문인지는 가리지 않았다). 폰트 머티리얼이 이 셰이더를 쓰므로 Windows 폰트 번들 해시가 로컬(`8aa323fe…`)과 Jenkins(`3ebbea25…`)에서 달랐다. Android는 DX11로 컴파일하지 않아 같았다(2026-11-06 Jenkins 빌드 #8과 로컬 전체 빌드 비교, 두 번들을 풀어 셰이더 블록의 SPDB 청크만 다른 것을 확인). 줄을 지우고 저장소 무결성 검사로 막는다.
 - 압축은 LZ4로 시작한다. 원격 번들의 다운로드 크기를 줄일 필요가 생기면 LZMA를 비교하고 결과를 기록한다.
 - 그룹과 라벨은 구현하면서 조정하고, 바뀌면 이 표를 갱신한다.
@@ -352,6 +354,7 @@ Boot 씬 (빌드 내장)
 | Addressables Profiler 모듈 | 로드된 번들·에셋 수와 참조 수 | 팝업 열기 → 캐릭터 전환 → 닫기 구간 캡처 또는 영상 |
 | Memory Profiler 스냅샷 | 반복 전후 객체·메모리 비교 | 팝업 30회, 씬 왕복 30회 전후 비교표 |
 | `ResourceCounters`(테스트 메뉴) | 이 프로젝트가 소유한 핸들·인스턴스 수 | Profiler 수치와 대조 |
+| 반복 계측(`RepeatRunner`, 테스트 메뉴) | 상세 팝업 열기·닫기 30회, 로비↔챕터 1 왕복 30회를 자동으로 돌리고 매 회 보유 리소스·인스턴스·로드된 번들 수, Mono·할당·예약 메모리, 걸린 시간을 기록 | 로그와 `persistentDataPath/repeat-popup-<시각>.csv`, `repeat-scene-<시각>.csv`, 시작과 끝 값이 같은지 판정 |
 
 - Addressables Profiler는 개발 빌드와 Addressables 진단 설정(프로파일러 이벤트, 빌드 레이아웃)이 필요하다. 설정 이름은 설치 버전 문서로 확인한다.
 - 기록에는 기기, 빌드 설정(개발 빌드 여부), 그룹 구성, 캐시 상태, 반복 횟수를 함께 적는다.
@@ -379,13 +382,13 @@ Boot 씬 (빌드 내장)
 | 단계 | 내용 | 실패 조건 | 상태 |
 |---|---|---|---|
 | 무결성 검사 | `ci/integrity.ps1`, [8.3](#83-리소스-무결성-검사) | 오류 1건 이상 | 구현 |
-| EditMode 테스트 | `-runTests -testPlatform EditMode`, 결과 NUnit XML 게시 | 실패 테스트 1건 이상 | 구현 |
+| EditMode 테스트 | `-runTests -testPlatform EditMode`, 결과 NUnit XML 게시. 8.3의 Unity 안 검사 | 실패 테스트 1건 이상 | 구현 |
 | 원격 콘텐츠 선택 | `CONTENT=content/v2`면 `Remote/`만 v2로 덮는다(브랜치는 그대로, 끝나면 되돌림) | git 오류 | 구현 |
 | Addressables 빌드 | CCD 프로필로 `update`(커밋된 기준) / `full` / `none` | 빌드 오류, 기준 파일 없음 | 구현 |
 | 플레이어 빌드 | Windows 실행 파일(zip) 또는 APK, 개발 빌드, 보관 | 빌드 오류, Addressables 빌드가 프로필과 다름 | 구현 |
 | CCD 업로드 | Credentials의 키로 `ugs ccd entries sync -r [-u 배지]` | 업로드·릴리스 오류 | 구현 |
-| 원격 검증 | 업로드 직후 `latest`(와 고른 배지)의 카탈로그 해시를 공개 주소로 받아 로컬 빌드와 비교, 배지를 옮긴 뒤 공개 주소 반영에 1~2분 걸려 10초 간격으로 최대 4분 다시 시도 | 해시 불일치 | 구현(해시만, 번들 크기 대조는 예정) |
-| PlayMode 테스트 | 지연·실패 주입 시나리오 | 실패 테스트 1건 이상 | 예정 |
+| 원격 검증 | 업로드 직후 `latest`(와 고른 배지)의 카탈로그 해시를 공개 주소로 받아 로컬 빌드와 비교, 배지를 옮긴 뒤 공개 주소 반영에 1~2분 걸려 10초 간격으로 최대 4분 다시 시도. 해시가 맞으면 원격 빌드 폴더의 파일(카탈로그, 번들)이 그 릴리스에 모두 같은 크기로 있는지 본다 | 해시 불일치, 파일 없음, 크기 다름 | 구현 |
+| PlayMode 테스트 | `-runTests -testPlatform PlayMode`. 미리보기 요청 규칙(마지막 요청만 반영, 늦은 결과·Dispose 뒤 결과 반환, 취소, 실패 후 다시 시도), 지연·실패 주입 로더의 반환, 모의 패치의 끊김 후 이어 받기와 오프라인 두 경로. 가짜 로더와 모의 서비스라 네트워크를 쓰지 않는다 | 실패 테스트 1건 이상 | 구현 |
 | iOS 빌드 | Windows에서 Xcode 프로젝트 생성 → macOS에서 archive | 빌드 오류 | 예정 |
 | 보관 | 산출물, 테스트 결과 XML, 단계별 Unity 로그(`ci-logs/`) | — | 구현 |
 
@@ -393,7 +396,7 @@ Boot 씬 (빌드 내장)
 
 - `MODE=content-release`: 플랫폼마다 v1 전체 빌드 → 플레이어 → CCD v1 → `Remote/`를 v2로 덮기 → 같은 작업 폴더에서 그 기준으로 업데이트 빌드 → CCD v2(latest)를 한 실행에서 한다. Jenkins는 실행마다 추적 파일을 커밋 상태로 되돌리므로, 실행을 나누면 v2 업데이트가 이전 기준을 쓰게 된다. 그래서 한 실행에 묶었다. 새 기준 파일은 `ci-logs/baseline/`로 보관하고, 저장소와 다르면 사람이 받아 커밋한다. 번들 이름 규칙이나 로컬 콘텐츠를 바꿔 기준을 다시 만들 때 쓴다(2026-11-05 Windows·Android 기준을 손으로 다시 만든 뒤 추가).
 
-- 실행 방법: 수동 실행(파라미터 선택)과 `main` 폴링(15분). 폴링으로 시작된 실행은 무결성 검사와 EditMode 테스트만 하고 빌드와 업로드는 건너뛴다. 업로드는 사람이 파라미터를 골라 누른 실행에서만 일어나므로 실행 중 승인 단계는 두지 않는다(처음에는 두었다가 2026-11-06 뺐다). 로컬 PC라 GitHub 웹훅을 받을 공개 주소가 없어 폴링을 쓴다.
+- 실행 방법: 수동 실행(파라미터 선택)과 `main` 폴링(15분). 폴링으로 시작된 실행은 무결성 검사와 EditMode·PlayMode 테스트만 하고 빌드와 업로드는 건너뛴다. 업로드는 사람이 파라미터를 골라 누른 실행에서만 일어나므로 실행 중 승인 단계는 두지 않는다(처음에는 두었다가 2026-11-06 뺐다). 로컬 PC라 GitHub 웹훅을 받을 공개 주소가 없어 폴링을 쓴다.
 - `full`은 업데이트 기준을 새로 만들어 이미 배포한 플레이어와 호환이 끊긴다. 콘텐츠만 바꿀 때는 `update`를 쓴다.
 - CCD 키는 Jenkins Credentials(`ugs-service-key-id`, `ugs-service-secret-key`, Secret text)에만 둔다.
 
@@ -409,7 +412,7 @@ Unity 없이(`ci/integrity.ps1`):
 - 셰이더가 D3D11 디버그 정보를 넣지 않는다(5.2).
 - 빌더 코드와 서비스 계정 키가 저장소에 없다.
 
-Unity 안에서(EditMode 테스트 `ContentIntegrityTests`):
+Unity 안에서(EditMode 테스트 `ContentIntegrityTests`, `BundleLayoutTests`):
 
 - 커밋된 CSV를 실제 데이터 파서로 읽어 검증한다.
 - CSV와 코드가 쓰는 모든 주소(초상, 프리팹, 챕터 씬·아이콘, 코스튬, 배너, BGM)가 폴더 항목을 거쳐 실제 파일로 이어진다.
@@ -417,12 +420,15 @@ Unity 안에서(EditMode 테스트 `ContentIntegrityTests`):
 - 로컬 그룹은 정적 콘텐츠, 원격 그룹은 아니다.
 - 폴더 항목 안에 씬과 다른 에셋이 함께 있지 않다(5.2).
 - CCD 프로젝트·버킷 ID가 비어 있지 않다.
+- 같은 에셋이 여러 번들에 복사되지 않는다(Addressables Analyze의 Check Duplicate Bundle Dependencies 규칙을 테스트에서 실행).
+- 빌드 씬(Boot, 로비)과 `Resources`가 원격 그룹 에셋을 직접 참조하지 않는다. 직접 참조하면 플레이어에 들어가 패치로 바꿀 수 없다. 로컬 그룹 에셋(폰트)은 둘 다 앱 안에 있어 허용한다(5.2).
 
-예정: Addressables Analyze 규칙(번들 간 중복, 씬 의존성 중복), Boot·패치 UI가 Addressables 에셋을 참조하지 않는지, 업로드 후 원격 카탈로그 기준 번들 존재와 크기 대조.
+업로드 뒤(`CiBuild.Upload`): 원격 카탈로그 해시와 원격 파일 존재·크기(8.2 원격 검증).
+
 
 ### 8.4 기능 테스트 추가 규칙
 
-- 작업 중 추가하는 기능 테스트는 `Assets/LobbyFlow/Tests/EditMode`(또는 이후 PlayMode 테스트 어셈블리)에 넣으면 파이프라인에 자동으로 포함된다.
+- 작업 중 추가하는 기능 테스트는 `Assets/LobbyFlow/Tests/EditMode` 또는 `Assets/LobbyFlow/Tests/PlayMode`에 넣으면 파이프라인에 자동으로 포함된다. Awaitable을 쓰는 PlayMode 테스트는 `AsyncTest.Run`으로 감싸고, 완료 순서를 정해야 하면 `FakePreviewLoader`를 쓴다.
 - 실기기에서만 확인할 수 있는 항목(실제 네트워크 끊김, 메모리 관측)은 자동화하지 않고 수동 검증 기록으로 남긴다.
 
 ---

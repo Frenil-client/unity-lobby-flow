@@ -1,6 +1,6 @@
 // Lobby Flow 빌드 파이프라인(SPEC 8).
 // 에이전트: Unity 6000.3.9f1 과 라이선스가 있는 Windows PC(레이블 unity-windows). 설치와 설정은 docs/guides/jenkins-setup.md.
-// main 폴링으로 시작된 실행은 무결성 검사와 EditMode 테스트만 한다. 빌드와 CCD 업로드는 사람이 파라미터를 골라 실행한다.
+// main 폴링으로 시작된 실행은 무결성 검사와 EditMode, PlayMode 테스트만 한다. 빌드와 CCD 업로드는 사람이 파라미터를 골라 실행한다.
 //   MODE=custom          : 플랫폼 하나에 대해 고른 단계(콘텐츠 출처, Addressables, 플레이어, 업로드)만 한다.
 //   MODE=content-release : 고른 플랫폼마다 v1 전체 빌드 → 플레이어 → CCD v1 → v2 덮기 → 업데이트 빌드 → CCD v2 를 한 번에 하고,
 //                          새 업데이트 기준 파일(addressables_content_state.bin)을 산출물로 남긴다. 커밋은 사람이 한다.
@@ -48,6 +48,18 @@ pipeline {
             post {
                 always {
                     nunit testResultsPattern: 'ci-logs/editmode-results.xml', failIfNoResults: false
+                }
+            }
+        }
+
+        stage('PlayMode 테스트') {
+            steps {
+                // 미리보기 요청 규칙, 지연·실패 주입, 모의 패치를 실제 프레임 진행으로 검증한다(SPEC 8.4). 네트워크는 쓰지 않는다.
+                unity('playmode-tests', params.PLATFORM, "'-runTests','-testPlatform','PlayMode','-testResults',\"\$PWD/ci-logs/playmode-results.xml\"")
+            }
+            post {
+                always {
+                    nunit testResultsPattern: 'ci-logs/playmode-results.xml', failIfNoResults: false
                 }
             }
         }
