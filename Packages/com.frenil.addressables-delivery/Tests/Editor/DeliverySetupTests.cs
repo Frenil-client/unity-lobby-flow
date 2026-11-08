@@ -96,17 +96,39 @@ namespace AddressablesDelivery.Tests
             if (_delivery.Storage != RemoteStorage.Ccd)
                 Assert.Ignore("CCD 를 쓰지 않는다");
 
-            Assert.That(_delivery.CcdProjectId, Is.Not.Empty);
+            // 프로젝트에 적용 직후(저장소 정보를 채우기 전)는 건너뛴다. 일부만 채웠으면 실패한다.
+            var buckets = new[] { _delivery.WindowsBucket, _delivery.AndroidBucket, _delivery.IosBucket };
+            var hasBucket = System.Array.Exists(buckets, b => b.Id.Length > 0 || b.Name.Length > 0);
+            if (string.IsNullOrEmpty(_delivery.CcdProjectId) && !hasBucket)
+                Assert.Ignore("CCD 정보가 아직 비어 있다. 설정 에셋에 프로젝트 ID 와 버킷을 채우면 검사한다");
+
+            Assert.That(_delivery.CcdProjectId, Is.Not.Empty, "CCD 프로젝트 ID 가 비어 있다");
             Assert.That(DeliveryProjectSetup.HasUrlProperties(_delivery.CcdUrlClass, out var missing), Is.True,
                 $"{_delivery.CcdUrlClass} 에 {missing} 이(가) 없다");
 
-            var buckets = new[] { _delivery.WindowsBucket, _delivery.AndroidBucket, _delivery.IosBucket };
-            Assert.That(System.Array.Exists(buckets, b => b.Id.Length > 0), Is.True, "버킷이 하나도 없다");
+            Assert.That(System.Array.Exists(buckets, b => b.Id.Length > 0), Is.True, "버킷 ID 가 하나도 없다");
             foreach (var bucket in buckets)
                 Assert.That(bucket.Name.Length > 0, Is.EqualTo(bucket.Id.Length > 0), $"버킷 이름과 ID 중 하나만 있다: {bucket.Name}/{bucket.Id}");
 
             var url = CcdLocation.EntryUrl(CcdLocation.Current, CcdLocation.ReleaseBadge, "catalog.hash");
             Assert.That(url, Does.Contain(_delivery.CcdProjectId).And.Contain($"/release_by_badge/{CcdLocation.ReleaseBadge}/").And.EndWith("?path=/catalog.hash"));
+        }
+
+        [Test]
+        public void BadgeTransformReplacesOnlyCcdBadge()
+        {
+            // 개발 빌드는 카탈로그에 든 주소의 배지를 요청할 때 지금 배지로 바꾼다. 로컬 파일 경로와 배지가 없는 주소는 그대로 둔다.
+            var bucket = CcdLocation.Current;
+            var other = CcdLocation.Badge + "-other";
+            Assert.That(CcdLocation.ReplaceBadge(CcdLocation.EntryUrl(bucket, other, "catalog.hash")),
+                Is.EqualTo(CcdLocation.EntryUrl(bucket, CcdLocation.Badge, "catalog.hash")));
+
+            var current = CcdLocation.EntryUrl(bucket, CcdLocation.Badge, "a.bundle");
+            Assert.That(CcdLocation.ReplaceBadge(current), Is.SameAs(current));
+
+            const string local = "C:/Data/release_by_badge/v1/a.bundle";
+            Assert.That(CcdLocation.ReplaceBadge(local), Is.SameAs(local));
+            Assert.That(CcdLocation.ReplaceBadge("https://example.com/content/a.bundle"), Is.EqualTo("https://example.com/content/a.bundle"));
         }
 
         [Test]

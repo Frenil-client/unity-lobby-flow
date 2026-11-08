@@ -46,6 +46,7 @@
    - Addressables 설정이 없으면 만들고, LocalServer와 CCD 프로필, 원격 카탈로그, JSON 카탈로그, 공통 번들 이름, 플레이어 빌드 옵션을 맞춘다.
 2. 콘솔에 `ENABLE_JSON_CATALOG 심볼을 추가했다`가 나오면 컴파일이 끝날 때까지 기다린다. 빌드 창은 컴파일 전에는 빌드를 거부한다.
 3. 콘솔 경고(비어 있는 CCD ID 등)는 3절을 마친 뒤 메뉴를 한 번 더 누르면 사라진다.
+4. 이 상태로 EditMode 테스트를 돌리면 CCD 정보 검사(`CcdLocationIsComplete`)와 원격 참조 검사(`BuildScenesAndResourcesDoNotReferenceRemoteContent`)는 건너뜀(Ignored)으로 나온다. 3절과 4절을 마치면 검사한다.
 
 ## 3. 원격 저장소 준비
 

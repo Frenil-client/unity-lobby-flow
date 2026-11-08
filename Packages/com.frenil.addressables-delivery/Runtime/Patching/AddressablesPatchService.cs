@@ -30,19 +30,34 @@ namespace AddressablesDelivery.Patching
             }
         }
 
+        /// <remarks>
+        /// 개발 빌드에서 고른 CCD 배지(<see cref="CcdLocation.TestBadge"/>)는 여기서 적용한다. 카탈로그와 번들이 함께 바뀌는 곳이 이 확인뿐이라,
+        /// 원격 번들을 쓰는 화면이 없는 Boot 에서만 부른다. 확인이나 갱신이 실패하면 받아 둔 카탈로그에 맞게 이전 배지로 되돌린다.
+        /// </remarks>
         public async Awaitable<PatchCheckResult> CheckAsync(CancellationToken cancellationToken)
         {
-            var check = Addressables.CheckForCatalogUpdates(false);
-            var catalogs = await CompleteAsync(check, "카탈로그 확인", cancellationToken);
-
-            var updated = catalogs != null && catalogs.Count > 0;
-            if (updated)
+            var previousBadge = CcdLocation.BeginBadgeCheck();
+            bool updated;
+            try
             {
-                DeliveryLog.Info($"카탈로그 변경 {catalogs.Count}개, 갱신한다");
-                var update = Addressables.UpdateCatalogs(catalogs, false);
-                await CompleteAsync(update, "카탈로그 갱신", cancellationToken);
+                var check = Addressables.CheckForCatalogUpdates(false);
+                var catalogs = await CompleteAsync(check, "카탈로그 확인", cancellationToken);
+
+                updated = catalogs != null && catalogs.Count > 0;
+                if (updated)
+                {
+                    DeliveryLog.Info($"카탈로그 변경 {catalogs.Count}개, 갱신한다");
+                    var update = Addressables.UpdateCatalogs(catalogs, false);
+                    await CompleteAsync(update, "카탈로그 갱신", cancellationToken);
+                }
+            }
+            catch
+            {
+                CcdLocation.RestoreBadge(previousBadge);
+                throw;
             }
 
+            CcdLocation.CommitBadge();
             var bytes = await GetDownloadSizeAsync(_bootLabel, cancellationToken);
             return new PatchCheckResult(bytes, updated);
         }

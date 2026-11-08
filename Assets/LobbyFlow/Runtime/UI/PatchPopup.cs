@@ -60,7 +60,7 @@ namespace LobbyFlow.UI
             anchorMax.x = progress.Ratio;
             _progressFill.anchorMax = anchorMax;
             _percent.text = $"{progress.Ratio * 100f:0}%";
-            _bytes.text = $"{ByteFormat.ToMegabytes(progress.DownloadedBytes)} / {ByteFormat.ToMegabytes(progress.TotalBytes)}";
+            _bytes.text = ByteFormat.FormatProgress(progress.DownloadedBytes, progress.TotalBytes);
         }
 
         public void ShowCompleted()

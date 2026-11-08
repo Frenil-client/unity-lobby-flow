@@ -65,7 +65,11 @@ git restore -- Assets/LobbyFlowContent/Remote
 git clean -fd -- Assets/LobbyFlowContent/Remote
 ```
 
-프로필을 바꾸면 `AddressableAssetSettings.asset`이 바뀐다. 끝나면 프로필을 `CCD`로 돌려 두거나 그 파일도 되돌린다.
+2번의 전체 빌드는 커밋된 업데이트 기준(`Assets/AddressableAssetsData/Windows/addressables_content_state.bin`)을 LocalServer 기준으로 덮어쓰고, 프로필을 바꾸면 `AddressableAssetSettings.asset`도 바뀐다. 둘 다 되돌린다(Unity 를 닫거나 프로필을 `CCD`로 돌린 뒤).
+
+```bash
+git restore -- Assets/AddressableAssetsData
+```
 
 ## 문제 해결
 
@@ -75,4 +79,4 @@ git clean -fd -- Assets/LobbyFlowContent/Remote
 | 플레이어 빌드 버튼이 꺼져 있음 | 위와 같거나, 현재 플랫폼이 버튼의 플랫폼과 다르다(File ▸ Build Profiles에서 전환) |
 | 앱이 "카탈로그 확인 실패" | LocalServer면 콘텐츠 서버가 꺼져 있다. CCD면 인터넷 연결을 확인한다 |
 | 업로드 버튼이 없음 | 정상이다. 업로드는 작성자의 서비스 계정 키가 있어야 한다 |
-| v2로 바꿨는데 그대로 | 테스트 메뉴의 "Boot 다시 실행"이 아니라 앱을 완전히 다시 시작해야 한다 |
+| CCD 배지를 v2로 바꿨는데 그대로 | 배지는 다음 카탈로그 확인에서 적용된다. 테스트 메뉴의 "Boot 다시 실행"을 누른다. Boot 로그에 `CCD 배지 v1 → v2`가 찍히는지 본다 |

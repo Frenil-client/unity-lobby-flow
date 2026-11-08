@@ -68,16 +68,16 @@ namespace LobbyFlow.UI
         }
 
         /// <summary>
-        /// 다음 실행부터 받을 CCD 콘텐츠 버전(v1 → v2 → latest)을 바꾼다. 설치한 기기에서 겨울(v1)에서 봄(v2)으로 바뀌는 패치를 보는 데 쓴다.
-        /// Addressables 는 시작할 때 주소를 정하므로 "Boot 다시 실행"이 아니라 앱을 다시 시작해야 적용된다.
+        /// 받을 CCD 콘텐츠 버전(v1 → v2 → latest)을 고른다. 설치한 기기에서 겨울(v1)에서 봄(v2)으로 바뀌는 패치를 보는 데 쓴다.
+        /// 원격 번들을 쓰는 화면이 있는 동안 주소를 바꾸면 카탈로그와 번들이 어긋나므로, 다음 Boot 의 카탈로그 확인에서 적용한다.
         /// </summary>
         private static void CycleContentBadge()
         {
             var badges = CcdLocation.TestBadges;
             var next = badges[(System.Array.IndexOf(badges, CcdLocation.TestBadge) + 1) % badges.Length];
             CcdLocation.TestBadge = next;
-            LobbyLog.Info($"CCD 콘텐츠 {next} 선택(현재 실행은 {CcdLocation.Badge})");
-            MessageToast.Show(next == CcdLocation.Badge ? $"CCD 콘텐츠 {next}" : $"앱을 다시 시작하면 CCD 콘텐츠 {next}를 받습니다.");
+            LobbyLog.Info($"CCD 콘텐츠 {next} 선택(지금은 {CcdLocation.Badge})");
+            MessageToast.Show(next == CcdLocation.Badge ? $"CCD 콘텐츠 {next}" : $"Boot 다시 실행을 누르면 CCD 콘텐츠 {next}를 확인합니다.");
         }
 
         /// <summary>시작 패치와 원격 챕터 라벨의 캐시를 지운다. 데이터를 아직 읽지 않았으면 시작 패치만 지운다.</summary>
@@ -129,7 +129,7 @@ namespace LobbyFlow.UI
             SetLabel(_clearCacheButton, "다운로드 캐시 삭제");
             SetLabel(_contentBadgeButton, CcdLocation.TestBadge == CcdLocation.Badge
                 ? $"CCD 콘텐츠: {CcdLocation.Badge}"
-                : $"CCD 콘텐츠: {CcdLocation.Badge} → {CcdLocation.TestBadge} (재시작 후)");
+                : $"CCD 콘텐츠: {CcdLocation.Badge} → {CcdLocation.TestBadge} (Boot 다시 실행)");
             SetLabel(_rebootButton, "Boot 다시 실행");
             SetLabel(_repeatPopupButton, $"반복 {RepeatRunner.DefaultCount}회: 상세 팝업 열고 닫기");
             SetLabel(_repeatSceneButton, $"반복 {RepeatRunner.DefaultCount}회: 챕터 1 왕복");

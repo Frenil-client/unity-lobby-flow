@@ -1,8 +1,8 @@
 using System;
 using System.Threading;
+using AddressablesDelivery;
 using AddressablesDelivery.Patching;
 using LobbyFlow.Content;
-using LobbyFlow.Patching;
 using LobbyFlow.Scenes;
 using TMPro;
 using UISystem;
@@ -49,7 +49,7 @@ namespace LobbyFlow.UI
         private async Awaitable RunAsync(CancellationToken cancellationToken)
         {
             var patch = LobbyServices.PatchService;
-            LobbyLog.Info($"Boot 시작, 패치 서비스 {patch.GetType().Name}, CCD 배지 {CcdConfig.Badge}");
+            LobbyLog.Info($"Boot 시작, 패치 서비스 {patch.GetType().Name}, CCD 배지 {DescribeBadge()}");
 
             var check = await CheckWithRetryAsync(patch, cancellationToken);
             if (check == BootStep.Quit)
@@ -65,6 +65,9 @@ namespace LobbyFlow.UI
             SceneFlow.Load(SceneFlow.Lobby);
         }
 
+        private static string DescribeBadge() =>
+            CcdLocation.PendingBadge == CcdLocation.Badge ? CcdLocation.Badge : $"{CcdLocation.Badge} → {CcdLocation.PendingBadge}";
+
         private async Awaitable<BootStep> CheckWithRetryAsync(IPatchService patch, CancellationToken cancellationToken)
         {
             while (true)
@@ -73,7 +76,7 @@ namespace LobbyFlow.UI
                 try
                 {
                     var result = await patch.CheckAsync(cancellationToken);
-                    LobbyLog.Info($"Boot 카탈로그 확인 완료, 갱신 {result.CatalogUpdated}, 받을 크기 {ByteFormat.ToMegabytes(result.DownloadBytes)}");
+                    LobbyLog.Info($"Boot 카탈로그 확인 완료, 갱신 {result.CatalogUpdated}, 받을 크기 {ByteFormat.Format(result.DownloadBytes)}({result.DownloadBytes}바이트)");
                     _downloadBytes = result.DownloadBytes;
                     return result.HasUpdate ? BootStep.Download : BootStep.Skip;
                 }
@@ -111,7 +114,7 @@ namespace LobbyFlow.UI
 
             _status.text = "업데이트가 있습니다.";
             var onCellular = Application.internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork;
-            var message = $"추가 콘텐츠 {ByteFormat.ToMegabytes(_downloadBytes)}를 받아야 합니다.";
+            var message = $"추가 콘텐츠 {ByteFormat.Format(_downloadBytes)}를 받아야 합니다.";
             if (!await popup.AskDownloadAsync("업데이트", message, "종료", onCellular))
             {
                 AppQuit.Quit();

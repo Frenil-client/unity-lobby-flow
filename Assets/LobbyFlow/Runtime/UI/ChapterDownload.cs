@@ -45,7 +45,7 @@ namespace LobbyFlow.UI
                 return false;
 
             var onCellular = Application.internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork;
-            if (!await popup.AskDownloadAsync(chapter.Name, $"챕터 콘텐츠 {ByteFormat.ToMegabytes(bytes)}를 받아야 합니다.", "취소", onCellular))
+            if (!await popup.AskDownloadAsync(chapter.Name, $"챕터 콘텐츠 {ByteFormat.Format(bytes)}를 받아야 합니다.", "취소", onCellular))
             {
                 await manager.CloseAsync(popup);
                 return false;

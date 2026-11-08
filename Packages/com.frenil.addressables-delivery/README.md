@@ -96,7 +96,7 @@ var bytes = await patch.GetDownloadSizeAsync("chapter02", token);
 - `SimulatedPatchService` 와 `PatchSimulationSettings` 는 네트워크 없이 최신, 업데이트 있음, 오프라인(캐시 있음/없음), 다운로드 끊김을 흉내 낸다. 화면 흐름 검증용이며 실제 네트워크 장애 검증이 아니다.
 - `AssetHandleSet` 은 화면 하나가 로드한 리소스를 묶어 `Dispose` 한 번으로 반환한다. 반환 뒤 도착한 결과는 null 로 돌려준다. `ResourceCounters` 로 반복 뒤 보유 수가 시작 값으로 돌아오는지 본다.
 - `DeliveryLog.Handler` 로 패키지 로그를 프로젝트 로그 형식에 맞출 수 있다.
-- 개발 빌드는 `CcdLocation.TestBadge` 로 다음 실행에서 받을 배지를 바꿀 수 있다(앱을 다시 시작해야 적용).
+- 개발 빌드는 `CcdLocation.TestBadge` 로 받을 배지를 고를 수 있다. 고른 배지는 다음 `CheckAsync` 에서 적용되므로 앱을 다시 시작하지 않아도 된다(요청 주소의 배지 부분을 `Addressables.InternalIdTransformFunc` 로 바꾼다. 프로젝트가 이미 넣은 변환이 있으면 그 결과에 이어서 적용한다). `CheckAsync` 는 원격 번들을 쓰는 화면이 없을 때 부른다.
 
 ## CI 진입점
 
