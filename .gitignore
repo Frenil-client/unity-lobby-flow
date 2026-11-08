@@ -33,6 +33,9 @@ sysinfo.txt
 # Android 네이티브 빌드(Gradle/CMake prefab) 임시 폴더
 /.utmp/
 InitTestScene*.unity
+# 에디터에서 PlayMode 테스트를 돌릴 때 성능 테스트 패키지가 만드는 실행 정보(프로젝트의 Resources 는 Assets/LobbyFlow/Resources)
+/[Aa]ssets/[Rr]esources/PerformanceTestRun*
+/[Aa]ssets/[Rr]esources.meta
 
 # 씬·프리팹 생성 빌더 — 산출물만 추적한다. 폴더 meta 까지 함께 제외해야 고아 meta 가 남지 않는다
 /[Aa]ssets/LobbyFlow/Builder/
