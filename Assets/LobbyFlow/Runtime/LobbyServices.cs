@@ -1,6 +1,6 @@
+using AddressablesDelivery.Patching;
 using LobbyFlow.Content;
 using LobbyFlow.Loading;
-using LobbyFlow.Patching;
 using UnityEngine;
 
 namespace LobbyFlow
@@ -20,8 +20,8 @@ namespace LobbyFlow
 
         /// <summary>테스트 메뉴의 모의 패치 조건에 따라 실제·모의 서비스를 고른다. 호출할 때마다 현재 조건을 따른다.</summary>
         public static IPatchService PatchService => PatchSimulationSettings.IsSimulated
-            ? _simulatedPatch ??= new SimulatedPatchService()
-            : _addressablesPatch ??= new AddressablesPatchService();
+            ? _simulatedPatch ??= new SimulatedPatchService(ContentAddresses.PatchBootLabel)
+            : _addressablesPatch ??= new AddressablesPatchService(ContentAddresses.PatchBootLabel);
 
         /// <summary>Boot 가 패치를 마친 뒤 읽은 데이터. 로비를 직접 실행했으면 <see cref="EnsureContentAsync"/> 가 채운다.</summary>
         public static ContentTables Content { get; private set; }

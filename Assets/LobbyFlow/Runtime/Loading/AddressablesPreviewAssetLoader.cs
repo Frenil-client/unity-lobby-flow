@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using AddressablesDelivery.Loading;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;

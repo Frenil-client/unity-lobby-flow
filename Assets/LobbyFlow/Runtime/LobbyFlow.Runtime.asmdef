@@ -3,6 +3,7 @@
     "rootNamespace": "LobbyFlow",
     "references": [
         "UISystem.Runtime",
+        "AddressablesDelivery.Runtime",
         "UnityEngine.UI",
         "Unity.InputSystem",
         "Unity.Addressables",

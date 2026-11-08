@@ -2,6 +2,8 @@
 
 `Jenkinsfile`을 돌리기 위한 Jenkins 설정 순서다. 구성과 단계는 SPEC 8장을 따른다. Jenkins 한 대가 컨트롤러이자 Unity 빌드 에이전트(레이블 `unity-windows`)다.
 
+다른 프로젝트에서 패키지의 **CI 파일 내보내기**로 만든 Jenkinsfile도 1~3절과 6절, 문제 해결은 같다. 작업 등록과 파라미터는 [새 프로젝트 적용 가이드](new-project-setup.md) 8절을 본다.
+
 ## 1. 설치
 
 1. Java 21(또는 17)을 설치한다. 예: Eclipse Temurin JDK 21 Windows x64 MSI. 설치 중 `JAVA_HOME` 설정을 켠다.

@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "com.frenil.addressables-delivery": {
+      "version": "file:com.frenil.addressables-delivery",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.addressables": "2.8.1",
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.frenil.uisystem": {
       "version": "https://github.com/Frenil-client/unity-ui-system.git?path=/Assets/UISystem#v0.3.1",
       "depth": 0,

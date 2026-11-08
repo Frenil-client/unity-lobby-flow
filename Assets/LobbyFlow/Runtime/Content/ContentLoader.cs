@@ -1,4 +1,4 @@
-using LobbyFlow.Loading;
+using AddressablesDelivery.Loading;
 using UnityEngine;
 
 namespace LobbyFlow.Content

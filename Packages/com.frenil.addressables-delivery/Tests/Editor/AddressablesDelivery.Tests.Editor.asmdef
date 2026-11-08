@@ -1,0 +1,27 @@
+{
+    "name": "AddressablesDelivery.Tests.Editor",
+    "rootNamespace": "AddressablesDelivery.Tests",
+    "references": [
+        "AddressablesDelivery.Runtime",
+        "AddressablesDelivery.Editor",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

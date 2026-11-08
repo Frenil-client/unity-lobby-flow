@@ -3,6 +3,7 @@
     "rootNamespace": "LobbyFlow.Tests",
     "references": [
         "LobbyFlow.Runtime",
+        "AddressablesDelivery.Runtime",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

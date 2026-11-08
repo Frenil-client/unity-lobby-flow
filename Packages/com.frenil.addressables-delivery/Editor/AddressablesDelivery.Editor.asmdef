@@ -1,0 +1,22 @@
+{
+    "name": "AddressablesDelivery.Editor",
+    "rootNamespace": "AddressablesDelivery.Editor",
+    "references": [
+        "AddressablesDelivery.Runtime",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor",
+        "Unity.ResourceManager",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

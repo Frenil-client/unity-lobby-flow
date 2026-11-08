@@ -1,6 +1,6 @@
 ﻿# Unity 를 배치 모드로 한 번 실행하고 종료 코드를 그대로 돌려준다(Jenkins 단계에서 부른다, SPEC 8).
 # 로그는 ci-logs/<Name>.log 에 남겨 Jenkins 가 보관한다.
-#   ci/unity.ps1 -Name addressables -BuildTarget Android -Arguments '-executeMethod','LobbyFlow.Editor.CiBuild.Addressables','-lobbyMode','update'
+#   ci/unity.ps1 -Name addressables -BuildTarget Android -Arguments '-executeMethod','AddressablesDelivery.Editor.CiBuild.Addressables','-deliveryMode','update'
 param(
     [Parameter(Mandatory = $true)][string]$Name,
     [Parameter(Mandatory = $true)][string]$BuildTarget,

@@ -1,5 +1,6 @@
 // Lobby Flow 빌드 파이프라인(SPEC 8).
 // 에이전트: Unity 6000.3.9f1 과 라이선스가 있는 Windows PC(레이블 unity-windows). 설치와 설정은 docs/guides/jenkins-setup.md.
+// 배치 진입점은 패키지 com.frenil.addressables-delivery 의 CiBuild 다. 이 파일은 패키지 템플릿(Templates~/Jenkinsfile)에 v1/v2 콘텐츠 릴리스를 더한 것이다.
 // main 폴링으로 시작된 실행은 무결성 검사와 EditMode, PlayMode 테스트만 한다. 빌드와 CCD 업로드는 사람이 파라미터를 골라 실행한다.
 //   MODE=custom          : 플랫폼 하나에 대해 고른 단계(콘텐츠 출처, Addressables, 플레이어, 업로드)만 한다.
 //   MODE=content-release : 고른 플랫폼마다 v1 전체 빌드 → 플레이어 → CCD v1 → v2 덮기 → 업데이트 빌드 → CCD v2 를 한 번에 하고,
@@ -161,16 +162,16 @@ def unity(String name, String target, String arguments) {
 }
 
 def addressablesArgs(String mode) {
-    return "'-executeMethod','LobbyFlow.Editor.CiBuild.Addressables','-lobbyProfile','CCD','-lobbyMode','${mode}'"
+    return "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Addressables','-deliveryProfile','CCD','-deliveryMode','${mode}'"
 }
 
 def playerArgs() {
-    return "'-executeMethod','LobbyFlow.Editor.CiBuild.Player'"
+    return "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Player'"
 }
 
 // 업로드 뒤 공개 주소의 카탈로그 해시가 올린 것과 같은지까지 확인한다(원격 검증).
 def uploadArgs(String badge) {
-    return "'-executeMethod','LobbyFlow.Editor.CiBuild.Upload','-lobbyBadge','${badge}','-lobbyNotes','Jenkins #${env.BUILD_NUMBER} ${badge}'"
+    return "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Upload','-deliveryBadge','${badge}','-deliveryNotes','Jenkins #${env.BUILD_NUMBER} ${badge}'"
 }
 
 // 원격 콘텐츠 폴더만 main(v1) 또는 content/v2 로 맞춘다. 브랜치는 바꾸지 않는다(SPEC 5.7).

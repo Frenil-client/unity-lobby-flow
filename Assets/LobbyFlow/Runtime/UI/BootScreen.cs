@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using AddressablesDelivery.Patching;
 using LobbyFlow.Content;
 using LobbyFlow.Patching;
 using LobbyFlow.Scenes;

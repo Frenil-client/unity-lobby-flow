@@ -1,0 +1,129 @@
+// Addressables Delivery 파이프라인. Tools ▸ Addressables Delivery ▸ CI 파일 내보내기 로 만든 시작점이라 프로젝트에 맞게 고쳐 쓴다.
+// 에이전트: Unity {{UNITY_VERSION}} 과 라이선스가 있는 Windows PC(레이블 {{AGENT_LABEL}}). 에이전트 환경 변수 UNITY_EXE, UGS_EXE 로 경로를 바꿀 수 있다.
+// main 폴링으로 시작된 실행은 무결성 검사와 테스트만 한다. 빌드와 업로드는 사람이 파라미터를 골라 실행하고, 실행 중에 다시 묻지 않는다.
+// ADDRESSABLES=full 은 업데이트 기준(addressables_content_state.bin)을 새로 만든다. 산출물 ci-logs/baseline 의 기준 파일을 저장소에 커밋해야
+// 다음 update 실행이 그 기준을 쓴다(실행마다 새로 체크아웃하므로 커밋하지 않은 기준은 사라진다).
+pipeline {
+    agent { label '{{AGENT_LABEL}}' }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '5'))
+    }
+
+    triggers {
+        pollSCM('H/15 * * * *')
+    }
+
+    parameters {
+        choice(name: 'PLATFORM', choices: [{{PLATFORM_CHOICES}}], description: 'Unity -buildTarget')
+        choice(name: 'ADDRESSABLES', choices: ['update', 'full', 'none'], description: 'update: 커밋된 기준으로 콘텐츠 업데이트 빌드. full: 기준을 새로 만든다(출시 빌드와 함께)')
+        booleanParam(name: 'BUILD_PLAYER', defaultValue: true, description: '개발 빌드(Windows 실행 파일 또는 APK)를 만들어 보관한다')
+        booleanParam(name: 'UPLOAD', defaultValue: false, description: '원격 저장소에 올리고 공개 주소로 검증한다')
+        string(name: 'BADGE', defaultValue: '', description: 'CCD: 새 릴리스에 더 붙일 배지(latest 는 CCD 가 옮긴다). Custom: 업로드 명령의 {badge}')
+    }
+
+    stages {
+        stage('무결성 검사') {
+            steps {
+                powershell 'ci/integrity.ps1'
+            }
+        }
+
+        stage('EditMode 테스트') {
+            steps {
+                // -runTests 는 끝나면 스스로 종료한다(0 통과, 2 실패 있음).
+                unity('editmode-tests', params.PLATFORM, "'-runTests','-testPlatform','EditMode','-testResults',\"\$PWD/ci-logs/editmode-results.xml\"")
+            }
+            post {
+                always {
+                    nunit testResultsPattern: 'ci-logs/editmode-results.xml', failIfNoResults: false
+                }
+            }
+        }
+
+        stage('PlayMode 테스트') {
+            steps {
+                unity('playmode-tests', params.PLATFORM, "'-runTests','-testPlatform','PlayMode','-testResults',\"\$PWD/ci-logs/playmode-results.xml\"")
+            }
+            post {
+                always {
+                    nunit testResultsPattern: 'ci-logs/playmode-results.xml', failIfNoResults: false
+                }
+            }
+        }
+
+        stage('Addressables 빌드') {
+            when { expression { isManualRun() && params.ADDRESSABLES != 'none' } }
+            steps {
+                unity('addressables', params.PLATFORM, "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Addressables','-deliveryMode','${params.ADDRESSABLES}'")
+                script {
+                    if (params.ADDRESSABLES == 'full') {
+                        def folder = platformFolder(params.PLATFORM)
+                        powershell """
+                            New-Item -ItemType Directory -Force ci-logs/baseline/${folder} | Out-Null
+                            Copy-Item Assets/AddressableAssetsData/${folder}/addressables_content_state.bin ci-logs/baseline/${folder}/
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('플레이어 빌드') {
+            when { expression { isManualRun() && params.BUILD_PLAYER } }
+            steps {
+                unity('player', params.PLATFORM, "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Player'")
+                archivePlayer(params.PLATFORM)
+            }
+        }
+
+        stage('업로드') {
+            when { expression { isManualRun() && params.UPLOAD } }
+            steps {
+                withUploadCredentials {
+                    unity('upload', params.PLATFORM, "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Upload','-deliveryBadge','${params.BADGE ?: 'none'}','-deliveryNotes','Jenkins #${env.BUILD_NUMBER}'")
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'ci-logs/*.log, ci-logs/*.xml, ci-logs/baseline/**', allowEmptyArchive: true
+        }
+    }
+}
+
+// 사람이 눌러 시작한 실행인지. main 폴링으로 시작된 실행은 검사와 테스트만 한다.
+def isManualRun() {
+    return currentBuild.getBuildCauses('hudson.triggers.SCMTrigger$SCMTriggerCause').isEmpty()
+}
+
+// Unity 를 배치 모드로 한 번 실행한다. 로그는 ci-logs/<name>.log.
+def unity(String name, String target, String arguments) {
+    powershell """
+        ci/unity.ps1 -Name ${name} -BuildTarget ${target} -Arguments ${arguments}
+        exit \$LASTEXITCODE
+    """
+}
+
+{{UPLOAD_CREDENTIALS}}
+
+def archivePlayer(String target) {
+    if (target == 'Android') {
+        archiveArtifacts artifacts: 'Builds/Android/*.apk', fingerprint: true
+    } else {
+        powershell "Compress-Archive -Path Builds/Windows/* -DestinationPath ci-logs/Player-Windows.zip -Force"
+        archiveArtifacts artifacts: 'ci-logs/Player-Windows.zip', fingerprint: true
+    }
+}
+
+// Addressables 가 업데이트 기준 파일을 두는 플랫폼 폴더 이름(Assets/AddressableAssetsData/<폴더>).
+def platformFolder(String target) {
+    switch (target) {
+        case 'Android': return 'Android'
+        case 'iOS': return 'iOS'
+        default: return 'Windows'
+    }
+}

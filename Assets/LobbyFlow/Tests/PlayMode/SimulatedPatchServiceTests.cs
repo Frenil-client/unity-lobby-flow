@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Threading;
 using LobbyFlow.Content;
-using LobbyFlow.Patching;
+using AddressablesDelivery.Patching;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -28,7 +28,7 @@ namespace LobbyFlow.Tests
         {
             PatchSimulationSettings.Mode = PatchSimulationMode.UpdateAvailable;
             PatchSimulationSettings.FailDownloadOnce = true;
-            var service = new SimulatedPatchService();
+            var service = new SimulatedPatchService(ContentAddresses.PatchBootLabel);
             var total = await service.GetDownloadSizeAsync(Label, CancellationToken.None);
             Assert.That(total, Is.GreaterThan(0));
 
@@ -64,7 +64,7 @@ namespace LobbyFlow.Tests
         public IEnumerator OfflineWithCacheStartsWithoutPatch() => AsyncTest.Run(async () =>
         {
             PatchSimulationSettings.Mode = PatchSimulationMode.OfflineWithCache;
-            var service = new SimulatedPatchService();
+            var service = new SimulatedPatchService(ContentAddresses.PatchBootLabel);
 
             Assert.That(await service.HasCachedContentAsync(CancellationToken.None), Is.True);
             Assert.That(await CheckFailsAsync(service), Is.True, "오프라인인데 카탈로그 확인이 성공했다");
@@ -74,7 +74,7 @@ namespace LobbyFlow.Tests
         public IEnumerator OfflineFirstRunHasNoCachedContent() => AsyncTest.Run(async () =>
         {
             PatchSimulationSettings.Mode = PatchSimulationMode.OfflineFirstRun;
-            var service = new SimulatedPatchService();
+            var service = new SimulatedPatchService(ContentAddresses.PatchBootLabel);
 
             Assert.That(await service.HasCachedContentAsync(CancellationToken.None), Is.False);
             Assert.That(await CheckFailsAsync(service), Is.True);
@@ -84,7 +84,7 @@ namespace LobbyFlow.Tests
         public IEnumerator UpToDateHasNothingToDownload() => AsyncTest.Run(async () =>
         {
             PatchSimulationSettings.Mode = PatchSimulationMode.UpToDate;
-            var service = new SimulatedPatchService();
+            var service = new SimulatedPatchService(ContentAddresses.PatchBootLabel);
 
             var result = await service.CheckAsync(CancellationToken.None);
             Assert.That(result.HasUpdate, Is.False);

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 978f764caf0a4a56a90aa6a24cbf785d, type: 3}
+  m_Name: DeliverySettings
+  m_EditorClassIdentifier: AddressablesDelivery.Runtime::AddressablesDelivery.DeliverySettings
+  _storage: 0
+  _ccdProjectId: 9211a594-db04-43bd-bd55-c6d120db13de
+  _ccdEnvironment: production
+  _windowsBucket:
+    _name: lobby-flow-windows
+    _id: 524e51c0-7d7e-459b-82e0-ba2724966f88
+  _androidBucket:
+    _name: lobby-flow-android
+    _id: 1454aff5-6030-4ea2-bf7d-ea924c51b8f8
+  _iosBucket:
+    _name: lobby-flow-ios
+    _id: cd31d4d9-4d68-4692-bcc8-aa1e3bb32c9e
+  _releaseBadge: latest
+  _testBadges:
+  - v1
+  - v2
+  - latest
+  _ccdUrlClass: LobbyFlow.Patching.CcdConfig
+  _customLoadUrl: https://cdn.example.com/[BuildTarget]
+  _customUploadCommand: 
+  _sharedBundlePrefix: lobbyflow
+  _playerName: LobbyFlow
+  _dynamicFontFolders:
+  - Assets/LobbyFlowContent
+  _localServerPort: 8080

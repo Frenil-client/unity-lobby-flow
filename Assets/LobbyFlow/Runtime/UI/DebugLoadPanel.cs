@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using AddressablesDelivery;
+using AddressablesDelivery.Loading;
+using AddressablesDelivery.Patching;
 using LobbyFlow.Content;
 using LobbyFlow.Diagnostics;
 using LobbyFlow.Loading;
-using LobbyFlow.Patching;
 using LobbyFlow.Scenes;
 using TMPro;
 using UnityEngine;
@@ -71,11 +73,11 @@ namespace LobbyFlow.UI
         /// </summary>
         private static void CycleContentBadge()
         {
-            var badges = CcdConfig.TestBadges;
-            var next = badges[(System.Array.IndexOf(badges, CcdConfig.TestBadge) + 1) % badges.Length];
-            CcdConfig.TestBadge = next;
-            LobbyLog.Info($"CCD 콘텐츠 {next} 선택(현재 실행은 {CcdConfig.Badge})");
-            MessageToast.Show(next == CcdConfig.Badge ? $"CCD 콘텐츠 {next}" : $"앱을 다시 시작하면 CCD 콘텐츠 {next}를 받습니다.");
+            var badges = CcdLocation.TestBadges;
+            var next = badges[(System.Array.IndexOf(badges, CcdLocation.TestBadge) + 1) % badges.Length];
+            CcdLocation.TestBadge = next;
+            LobbyLog.Info($"CCD 콘텐츠 {next} 선택(현재 실행은 {CcdLocation.Badge})");
+            MessageToast.Show(next == CcdLocation.Badge ? $"CCD 콘텐츠 {next}" : $"앱을 다시 시작하면 CCD 콘텐츠 {next}를 받습니다.");
         }
 
         /// <summary>시작 패치와 원격 챕터 라벨의 캐시를 지운다. 데이터를 아직 읽지 않았으면 시작 패치만 지운다.</summary>
@@ -125,9 +127,9 @@ namespace LobbyFlow.UI
             });
             SetLabel(_patchFailButton, PatchSimulationSettings.FailDownloadOnce ? "다운로드 끊김: 다음 1회" : "다운로드 끊김: 없음");
             SetLabel(_clearCacheButton, "다운로드 캐시 삭제");
-            SetLabel(_contentBadgeButton, CcdConfig.TestBadge == CcdConfig.Badge
-                ? $"CCD 콘텐츠: {CcdConfig.Badge}"
-                : $"CCD 콘텐츠: {CcdConfig.Badge} → {CcdConfig.TestBadge} (재시작 후)");
+            SetLabel(_contentBadgeButton, CcdLocation.TestBadge == CcdLocation.Badge
+                ? $"CCD 콘텐츠: {CcdLocation.Badge}"
+                : $"CCD 콘텐츠: {CcdLocation.Badge} → {CcdLocation.TestBadge} (재시작 후)");
             SetLabel(_rebootButton, "Boot 다시 실행");
             SetLabel(_repeatPopupButton, $"반복 {RepeatRunner.DefaultCount}회: 상세 팝업 열고 닫기");
             SetLabel(_repeatSceneButton, $"반복 {RepeatRunner.DefaultCount}회: 챕터 1 왕복");

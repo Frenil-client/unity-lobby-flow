@@ -36,6 +36,7 @@
 | 직렬화 | Force Text, Visible Meta Files |
 | UI | `com.frenil.uisystem` v0.3.1 (git URL, `Packages/manifest.json`), 글자는 TextMeshPro(`com.unity.ugui` 2.0) |
 | 리소스 | Addressables 2.8.1 (`com.unity.addressables`) |
+| 배포 도구 | `com.frenil.addressables-delivery`(이 저장소 `Packages/` 의 임베디드 패키지, 5.8) |
 | 원격 저장소 | Unity Cloud Content Delivery(CCD). Unity Cloud 프로젝트 연결 필요 |
 | 개발 PC | Windows 11 |
 | Android 검증 | 보유 Android 기기 |
@@ -175,9 +176,9 @@ Assets/LobbyFlowContent/
 |---|---|---|
 | Local | 로컬 빌드 폴더(에디터 호스팅 또는 Use Existing Build) | 에디터와 오프라인 검증 |
 | LocalServer | `http://[ServerHost]:8080/[BuildTarget]`. 빌드 창의 **콘텐츠 서버**가 `ServerData/`를 내보낸다. 켜 둔 서버는 Play 진입 등 스크립트를 다시 읽은 뒤 자동으로 다시 연다 | CCD 연결 전 패치 과정 검증. `ServerHost`는 `localhost`로 둔다. Android 기기는 USB로 연결하고 빌드 창의 **Android 기기 연결 (adb reverse)**로 기기의 localhost:8080을 PC로 잇는다(**Android 개발 빌드 후 기기 실행**은 LocalServer 프로필일 때 이 연결을 먼저 한다). CCD 연결 때 원격 경로를 CCD로 바꾼다 |
-| CCD | `https://{CcdConfig.ProjectId}.client-api.unity3dusercontent.com/client_api/v1/environments/{CcdConfig.Environment}/buckets/{CcdConfig.BucketId}/release_by_badge/{CcdConfig.Badge}/entry_by_path/content/?path=`(`LobbyFlow.Patching.CcdConfig`를 실행 중에 읽는다) | 실기기와 출시 빌드. 빌드 창의 **프로필**로 고르고, 바꾼 뒤에는 전체 빌드와 플레이어 빌드를 다시 한다 |
+| CCD | `https://{CcdConfig.ProjectId}.client-api.unity3dusercontent.com/client_api/v1/environments/{CcdConfig.Environment}/buckets/{CcdConfig.BucketId}/release_by_badge/{CcdConfig.Badge}/entry_by_path/content/?path=`(`LobbyFlow.Patching.CcdConfig`를 실행 중에 읽는다. 값은 패키지의 `CcdLocation`과 설정 에셋, 5.8) | 실기기와 출시 빌드. 빌드 창의 **프로필**로 고르고, 바꾼 뒤에는 전체 빌드와 플레이어 빌드를 다시 한다 |
 
-- CCD는 production 환경 하나, 플랫폼별 공개 버킷(`lobby-flow-windows`, `lobby-flow-android`, `lobby-flow-ios`, 2026-11-04 생성), `latest` 배지를 쓴다. 공개 여부는 생성 뒤 바꿀 수 없고, Addressables가 인증 없이 받으려면 공개여야 한다. 버킷 ID는 `CcdConfig`가 플랫폼 심볼(`UNITY_ANDROID`, `UNITY_IOS`)로 고른다. 프로젝트·버킷 ID는 공개 다운로드 주소의 일부라 저장소에 둔다. 리플렉션으로 읽으므로 `[Preserve]`로 코드 제거를 막는다.
+- CCD는 production 환경 하나, 플랫폼별 공개 버킷(`lobby-flow-windows`, `lobby-flow-android`, `lobby-flow-ios`, 2026-11-04 생성), `latest` 배지를 쓴다. 공개 여부는 생성 뒤 바꿀 수 없고, Addressables가 인증 없이 받으려면 공개여야 한다. 버킷 ID는 `CcdLocation`이 플랫폼 심볼(`UNITY_ANDROID`, `UNITY_IOS`)로 고른다. 프로젝트·버킷 ID와 배지 목록은 설정 에셋 `Assets/LobbyFlow/Resources/DeliverySettings.asset`에 두며, 공개 다운로드 주소의 일부라 저장소에 둔다. 리플렉션으로 읽으므로 `[Preserve]`로 코드 제거를 막는다.
 - 콘텐츠를 올릴 때마다 릴리스를 만들고, CCD가 새 릴리스에 `latest` 배지를 옮긴다(2026-11-05 릴리스 1에서 확인). 콘텐츠 버전 릴리스에는 `v1`, `v2` 배지를 붙인다(업로드 때 빌드 창에서 고르거나 `ugs ccd badges create`).
 - 배지 선택: 출시 빌드는 항상 `latest`. 개발 빌드는 테스트 메뉴 **CCD 콘텐츠**에서 `v1 → v2 → latest`를 고르고(처음 `v1`, 기기에 저장), 앱을 다시 시작하면 그 배지로 카탈로그를 확인한다. Addressables가 시작할 때 주소를 한 번 읽기 때문에 실행 중에는 바꿀 수 없다. 설치한 기기에서 겨울(v1) → 봄(v2) 패치를 보기 위한 것이다.
 - 공개 저장소 정책: CCD 다운로드는 누구나, 업로드는 작성자만(서비스 계정 키는 작성자 PC 환경 변수에만 있다). 받은 사람의 버전 변경 테스트는 LocalServer로 한다(`docs/guides/local-patch-test.md`). 빌드 창은 키가 없으면 업로드를 숨기고, 키 없이 배지별 카탈로그 해시를 받아 보는 "CCD 연결 확인"을 준다. 플레이어 버전이 바뀌어 호환이 깨지면 배지를 따로 만든다(예: `player-1`).
@@ -234,7 +235,7 @@ Assets/LobbyFlowContent/
 
 패치 테스트 절차:
 
-빌드, 프로필, 콘텐츠 서버, CCD 업로드는 **Lobby Flow ▸ 빌드 창** 한 곳에서 한다. 창은 현재 플랫폼, 프로필, 이 플랫폼 Addressables 빌드가 현재 프로필과 맞는지, 업데이트 기준 유무를 보여 주고, 맞지 않으면 플레이어 빌드와 CCD 업로드 버튼을 막는다. 기능은 `AddressablesBuild`, `PlayerBuild`, `ContentServer`, `CcdUpload` 정적 메서드에 있고 Jenkins도 같은 메서드를 부른다.
+빌드, 프로필, 콘텐츠 서버, CCD 업로드는 **Tools ▸ Addressables Delivery ▸ 빌드 창** 한 곳에서 한다. 창은 현재 플랫폼, 프로필, 이 플랫폼 Addressables 빌드가 현재 프로필과 맞는지, 업데이트 기준 유무를 보여 주고, 맞지 않으면 플레이어 빌드와 CCD 업로드 버튼을 막는다. 기능은 패키지의 `AddressablesBuild`, `PlayerBuild`, `ContentServer`, `ContentUpload` 정적 메서드에 있고 Jenkins도 같은 메서드를 부른다.
 
 1. `main`에서 빌드 창 **전체 빌드** → 원격 번들 업로드(LocalServer는 **콘텐츠 서버 시작**) → **Windows 개발 빌드**. 생긴 `addressables_content_state.bin`을 `main`에 커밋한다.
 2. `git restore --source=content/v2 -- Assets/LobbyFlowContent/Remote`로 원격 폴더만 v2로 덮는다. 브랜치는 바꾸지 않는다.
@@ -253,6 +254,22 @@ v2 패치는 1번 플레이어로 검증한다. 콘텐츠 업데이트 빌드는
 - 기존 에셋을 바꿀 때는 `.meta`를 유지해 GUID가 그대로여야 한다. 새 에셋은 v2 브랜치에 `.meta`와 함께 커밋한다.
 - `main`에서 `Remote/`를 바꾸면 `content/v2`를 `main` 위로 다시 올린다(rebase).
 - v2 콘텐츠는 빌더 메뉴로 만든다. 브랜치 생성·커밋·push는 사용자가 한다.
+
+### 5.8 배포 도구 패키지
+
+Addressables 배포에 쓰는 코드는 다른 프로젝트에서 가져다 쓸 수 있게 `Packages/com.frenil.addressables-delivery`로 분리했다. 사용법은 패키지 README, 새 프로젝트 적용 순서는 `docs/guides/new-project-setup.md`.
+
+| 위치 | 내용 |
+|---|---|
+| 패키지 Runtime | 설정 에셋 `DeliverySettings`, CCD 위치 `CcdLocation`, 패치 서비스(`IPatchService`, Addressables·모의 구현), `AssetHandleSet`, `ResourceCounters`, `DeliveryLog` |
+| 패키지 Editor | 프로젝트에 적용(`DeliveryProjectSetup`), 빌드 창, Addressables·플레이어 빌드, 콘텐츠 서버, 업로드(CCD, Custom 명령), CI 진입점, CI 파일 내보내기, 동적 폰트 저장 보정 |
+| 패키지 Tests | 설정·그룹 규칙(`DeliverySetupTests`), 번들 구성(`BundleLayoutTests`) |
+| 데모(`Assets/LobbyFlow`) | 화면, 씬 흐름, 데이터 테이블(CSV), 미리보기, 반복 계측, 콘텐츠와 그룹 구성, v1/v2 콘텐츠 릴리스(Jenkinsfile `content-release`) |
+
+- 프로젝트마다 다른 값(CCD 프로젝트·버킷, 배지, 공통 번들 접두어, 폰트 폴더, 플레이어 이름, 포트)은 설정 에셋에만 둔다. 플레이어가 실행 중에 CCD 주소를 읽으므로 설정 에셋은 `Resources/DeliverySettings.asset`이다.
+- CCD 프로필 주소에는 값을 읽는 클래스 이름이 들어가고, 그 문자열이 카탈로그의 번들 주소에 그대로 남는다. 이 저장소는 패키지 분리 전에 `LobbyFlow.Patching.CcdConfig`로 v1 기준과 CCD v1/v2를 만들었으므로, 그 이름을 패키지로 넘겨주는 클래스로 남기고 설정 에셋의 CCD 주소 클래스를 그 이름으로 둔다. 이름을 바꾸면 기준을 다시 만들어야 한다. 새 프로젝트는 기본값 `AddressablesDelivery.CcdLocation`을 쓴다.
+- 패키지로 옮긴 클래스는 콘텐츠에 들어가는 MonoBehaviour가 아니어서 번들 내용과 무관하다. 분리 뒤 로컬 Windows 전체 빌드를 Jenkins #14와 비교(번들 이름, 원격 카탈로그 해시, 기준 파일)해 확인한다.
+- 패키지의 CI 템플릿(`Templates~`)은 이 저장소 Jenkinsfile에서 v1/v2 콘텐츠 릴리스를 뺀 범용 판이다.
 
 ---
 
@@ -373,7 +390,7 @@ Boot 씬 (빌드 내장)
 
 - 파이프라인은 저장소의 `Jenkinsfile`로 관리한다. 설치와 등록 순서는 `docs/guides/jenkins-setup.md`.
 - Jenkins는 작업 폴더에 저장소를 따로 받아 빌드하므로, 열려 있는 Unity 프로젝트와 부딪히지 않는다. 작업 폴더의 `Library/`는 지우지 않고 다음 실행에 쓴다.
-- Unity는 `ci/unity.ps1`로 배치 모드(`-batchmode -nographics -buildTarget <플랫폼>`) 실행한다. 빌드 진입점은 `LobbyFlow.Editor.CiBuild`(`Addressables`, `Player`, `Upload`)이고 빌드 창과 같은 정적 메서드를 부른다. 진입점이 종료 코드를 직접 돌려주므로 `-quit`는 붙이지 않는다.
+- Unity는 `ci/unity.ps1`로 배치 모드(`-batchmode -nographics -buildTarget <플랫폼>`) 실행한다. 빌드 진입점은 패키지의 `AddressablesDelivery.Editor.CiBuild`(`Addressables`, `Player`, `Upload`, 인자 `-deliveryProfile`, `-deliveryMode`, `-deliveryBadge`, `-deliveryNotes`)이고 빌드 창과 같은 정적 메서드를 부른다. 진입점이 종료 코드를 직접 돌려주므로 `-quit`는 붙이지 않는다.
 - Windows 서비스로 Jenkins를 돌리면 로컬 시스템 계정으로 실행되어 Unity 라이선스를 찾지 못한다. 서비스 계정을 라이선스를 활성화한 사용자로 바꾼다.
 - 스크립트(`ci/*.ps1`)는 UTF-8 BOM으로 저장한다. Windows PowerShell 5.1은 BOM이 없으면 한글을 ANSI로 읽어 구문이 깨진다.
 
@@ -412,14 +429,15 @@ Unity 없이(`ci/integrity.ps1`):
 - 셰이더가 D3D11 디버그 정보를 넣지 않는다(5.2).
 - 빌더 코드와 서비스 계정 키가 저장소에 없다.
 
-Unity 안에서(EditMode 테스트 `ContentIntegrityTests`, `BundleLayoutTests`):
+Unity 안에서(EditMode 테스트. 데모의 `ContentIntegrityTests`와 패키지의 `DeliverySetupTests`, `BundleLayoutTests`. 패키지 테스트는 `Packages/manifest.json`의 `testables`로 함께 돈다):
 
 - 커밋된 CSV를 실제 데이터 파서로 읽어 검증한다.
 - CSV와 코드가 쓰는 모든 주소(초상, 프리팹, 챕터 씬·아이콘, 코스튬, 배너, BGM)가 폴더 항목을 거쳐 실제 파일로 이어진다.
 - 다운로드 라벨이 있는 챕터 씬은 원격 그룹 항목에 그 라벨이 붙어 있고, 로컬 챕터는 로컬 그룹에 있다. 코스튬은 `patch_boot` 라벨이 붙은 원격 항목이다.
 - 로컬 그룹은 정적 콘텐츠, 원격 그룹은 아니다.
 - 폴더 항목 안에 씬과 다른 에셋이 함께 있지 않다(5.2).
-- CCD 프로젝트·버킷 ID가 비어 있지 않다.
+- CCD 프로젝트·버킷 ID가 비어 있지 않고, CCD 주소 클래스에 실행 중 읽는 속성 4개가 있다.
+- 설정 에셋이 `Resources`에 있고, 원격 카탈로그를 만들되 시작 시 자동 갱신하지 않으며, JSON 카탈로그 심볼이 컴파일돼 있고, 플레이어 빌드가 Addressables를 빌드하지 않으며, 두 프로필의 주소가 설정 에셋과 맞는다.
 - 같은 에셋이 여러 번들에 복사되지 않는다(Addressables Analyze의 Check Duplicate Bundle Dependencies 규칙을 테스트에서 실행).
 - 빌드 씬(Boot, 로비)과 `Resources`가 원격 그룹 에셋을 직접 참조하지 않는다. 직접 참조하면 플레이어에 들어가 패치로 바꿀 수 없다. 로컬 그룹 에셋(폰트)은 둘 다 앱 안에 있어 허용한다(5.2).
 

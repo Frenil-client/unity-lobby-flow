@@ -1,0 +1,22 @@
+{
+  "name": "com.frenil.addressables-delivery",
+  "version": "0.1.0",
+  "displayName": "Addressables Delivery",
+  "description": "Addressables 원격 콘텐츠 배포 도구. 프로필과 카탈로그 설정 적용, 전체 빌드와 콘텐츠 업데이트 빌드, 플레이어 빌드 검사, 로컬 콘텐츠 서버, Unity CCD(또는 명령으로 올리는 다른 저장소) 업로드와 원격 검증, 시작 패치 서비스, Jenkins 템플릿을 묶었다.",
+  "unity": "6000.3",
+  "author": {
+    "name": "frenil",
+    "url": "https://github.com/Frenil-client"
+  },
+  "keywords": [
+    "addressables",
+    "ccd",
+    "patch",
+    "jenkins",
+    "ci"
+  ],
+  "dependencies": {
+    "com.unity.addressables": "2.8.1",
+    "com.unity.ugui": "2.0.0"
+  }
+}

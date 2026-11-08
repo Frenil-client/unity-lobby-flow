@@ -1,19 +1,18 @@
 using System.Collections.Generic;
 using System.IO;
 using LobbyFlow.Content;
-using LobbyFlow.Patching;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
-using UnityEditor.AddressableAssets.Build;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 
 namespace LobbyFlow.Tests
 {
     /// <summary>
-    /// 커밋된 콘텐츠와 Addressables 설정의 무결성(SPEC 5.2, 5.3, 5.6). 데이터 파일이 가리키는 주소가 실제 파일로 이어지는지,
-    /// 다운로드 라벨이 원격 그룹에 붙어 있는지, 로컬·원격 그룹의 업데이트 규칙이 맞는지 본다. Jenkins 가 빌드 전에 돌린다.
+    /// 커밋된 콘텐츠의 무결성(SPEC 5.2, 5.3, 5.6). 데이터 파일이 가리키는 주소가 실제 파일로 이어지는지,
+    /// 다운로드 라벨이 원격 그룹에 붙어 있는지 본다. Jenkins 가 빌드 전에 돌린다. 프로젝트와 무관한 설정·그룹 규칙과 번들 중복 검사는
+    /// 패키지 테스트(AddressablesDelivery.Tests)가 맡는다.
     /// </summary>
     public sealed class ContentIntegrityTests
     {
@@ -91,82 +90,6 @@ namespace LobbyFlow.Tests
                 Assert.That(IsRemote(entry.parentGroup) && entry.labels.Contains(ContentAddresses.PatchBootLabel), Is.True,
                     $"{costume.Id} 코스튬은 시작 패치 라벨이 붙은 원격 항목이어야 한다");
             }
-        }
-
-        [Test]
-        public void LocalGroupsAreStaticAndRemoteGroupsAreNot()
-        {
-            foreach (var group in _settings.groups)
-            {
-                if (group == null || group.entries.Count == 0)
-                    continue;
-
-                var update = group.GetSchema<ContentUpdateGroupSchema>();
-                Assert.That(update, Is.Not.Null, $"{group.Name} 에 콘텐츠 업데이트 설정이 없다");
-                Assert.That(update.StaticContent, Is.EqualTo(!IsRemote(group)), $"{group.Name} 의 정적 콘텐츠 설정이 원격 여부와 맞지 않다");
-            }
-        }
-
-        [Test]
-        public void FolderEntriesDoNotMixScenesWithOtherAssets()
-        {
-            // 폴더 항목의 번들 ID 는 첫 하위 항목 기준이라, 씬과 다른 에셋이 섞이면 기준 파일에 다른 에셋도 씬 번들로 기록되고
-            // 콘텐츠 업데이트 빌드가 바뀌지 않은 정적 그룹의 assets 번들 위치를 씬 번들로 바꿔 쓴다(SPEC 5.2). 씬은 파일 항목으로 둔다.
-            var mixed = new List<string>();
-            foreach (var group in _settings.groups)
-            {
-                if (group == null)
-                    continue;
-
-                foreach (var entry in group.entries)
-                {
-                    if (!AssetDatabase.IsValidFolder(entry.AssetPath))
-                        continue;
-
-                    var hasScene = false;
-                    var hasOther = false;
-                    foreach (var guid in AssetDatabase.FindAssets(string.Empty, new[] { entry.AssetPath }))
-                    {
-                        var path = AssetDatabase.GUIDToAssetPath(guid);
-                        if (AssetDatabase.IsValidFolder(path))
-                            continue;
-
-                        if (path.EndsWith(".unity"))
-                            hasScene = true;
-                        else
-                            hasOther = true;
-                    }
-
-                    if (hasScene && hasOther)
-                        mixed.Add($"{group.Name}: {entry.AssetPath}");
-                }
-            }
-
-            Assert.That(mixed, Is.Empty, "씬과 다른 에셋이 한 폴더 항목에 있다");
-        }
-
-        [Test]
-        public void SharedBundleNamesDoNotDependOnProjectFolder()
-        {
-            // 기본값(프로젝트 폴더 이름 해시)이면 Jenkins 작업 폴더와 로컬 폴더에서 번들 해시가 달라진다(SPEC 5.2).
-            Assert.That(_settings.BuiltInBundleNaming, Is.EqualTo(BuiltInBundleNaming.Custom));
-            Assert.That(_settings.BuiltInBundleCustomNaming, Is.EqualTo(LobbyFlow.Editor.AddressablesBuild.SharedBundlePrefix));
-            Assert.That(_settings.MonoScriptBundleNaming, Is.EqualTo(MonoScriptBundleNaming.Custom));
-            Assert.That(_settings.MonoScriptBundleCustomNaming, Is.EqualTo(LobbyFlow.Editor.AddressablesBuild.SharedBundlePrefix));
-        }
-
-        [Test]
-        public void CcdLocationIsComplete()
-        {
-            Assert.That(CcdConfig.ProjectId, Is.Not.Empty);
-            foreach (var bucket in new[] { CcdConfig.Windows, CcdConfig.Android, CcdConfig.IOS })
-            {
-                Assert.That(bucket.Name, Is.Not.Empty);
-                Assert.That(bucket.Id, Is.Not.Empty, $"{bucket.Name} 버킷 ID 가 비어 있다");
-            }
-
-            var url = CcdConfig.EntryUrl(CcdConfig.Windows, CcdConfig.LatestBadge, "catalog.hash");
-            Assert.That(url, Does.Contain(CcdConfig.Windows.Id).And.Contain("/release_by_badge/latest/").And.EndWith("?path=/catalog.hash"));
         }
 
         private string ReadAddress(string address)
