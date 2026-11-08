@@ -99,6 +99,8 @@ publish/
 *.md
 !README.md
 !/docs/**/*.md
+# 배포 패키지의 문서와 라이선스
+!/Packages/com.frenil.addressables-delivery/*.md
 
 # Claude Code 로컬 설정
 .claude/settings.local.json
