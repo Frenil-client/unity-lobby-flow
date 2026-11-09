@@ -1,170 +1,129 @@
 # Unity Lobby Flow
 
-> 초안 (2026-11-08). 계측(Profiler, 30회 반복), 시연 영상, iOS는 아직 없다. 해당 칸은 "예정"으로 표시했다.
+캐릭터 로비와 챕터 세 개로 **비동기 로딩의 리소스 수명과 Addressables 콘텐츠 업데이트**를 검증한 Unity 클라이언트 기술 데모입니다. 캐릭터 미리보기와 시즌 코스튬을 선택하고, 필요한 콘텐츠를 받은 뒤 챕터에 진입합니다.
 
-캐릭터 로비와 챕터 씬 세 개로 만든 작은 데모다. 전투는 없다. 비동기 로딩과 원격 콘텐츠 배포에서 생기는 문제를 실제로 만들고 고치는 데 집중했다.
+![겨울 v1에서 봄 v2로 콘텐츠 업데이트](docs/media/winter-to-spring.gif)
 
-- **비동기 로딩:** 로딩 도중 화면을 닫거나 다른 캐릭터를 고르거나 실패해도 결과가 엉뚱한 화면에 붙지 않고, 리소스는 정확히 한 번 반환된다.
-- **원격 콘텐츠 패치:** Addressables 로컬/원격 그룹, Unity CCD에 올린 콘텐츠를 앱이 시작할 때와 챕터에 들어갈 때 받는다. v1(겨울) → v2(봄) 업데이트에서 바뀐 번들만 받는 것을 Windows와 Android 기기에서 확인했다.
-- **재현 가능한 빌드:** 같은 커밋이면 로컬 PC와 Jenkins가 같은 번들을 만든다. 빌드 환경마다 번들이 달라지던 원인 세 가지와, 업데이트나 중복 문제를 만들던 그룹 구성 두 가지를 설정, 테스트, 검사 스크립트로 막았다.
-- **재사용:** 배포 코드는 다른 프로젝트에서 가져다 쓸 수 있는 패키지(`com.frenil.addressables-delivery`)로 분리했다.
+Windows 개발 빌드에서 CCD 콘텐츠를 v1에서 v2로 고르고 Boot를 다시 실행하면, 앱을 다시 시작하지 않고 카탈로그를 갱신한 뒤 바뀐 시작 콘텐츠 17KB를 받아 봄 로비로 들어갑니다.
 
-## 결과 요약
+| v1 겨울 | v2 봄 |
+|---|---|
+| ![v1 로비](docs/media/lobby-v1-winter.png) | ![v2 로비](docs/media/lobby-v2-spring.png) |
 
-| 항목 | 결과 | 근거 |
-|---|---|---|
-| v1 → v2 패치 (Windows, 로컬 콘텐츠 서버) | 카탈로그 갱신, 바뀐 시작 패치 번들과 챕터 2만 받음, 챕터 3과 로컬 번들은 요청 없음 | 서버 요청 로그, [LocalServer 기록](docs/records/2026-11-04-content-update-v2.md) |
-| CCD v1 → v2 패치 (Windows) | 카탈로그 갱신, 시작 패치 0.1MB, 코스튬 3 → 4, 챕터 2 다시 받기 | `Player.log`, [CCD 기록](docs/records/2026-11-05-ccd-v1-v2.md) |
-| CCD v1 → v2 패치 (Android 기기) | 겨울 → 봄 배너, 봄 축제 코스튬, 챕터 2 변경 | 화면 확인(기기 로그는 못 봄) |
-| 버전 되돌리기 | 개발 빌드에서 배지(v1/v2/latest)를 골라 재시작하면 두 방향 모두 카탈로그 갱신 | `Player.log` |
-| 챕터 2 다운로드 크기 | 약 2.9MB → 79KB → 21KB | 중복 폰트를 로컬 그룹으로, 중복 셰이더를 공유 그룹으로 옮김 |
-| v1 원격 콘텐츠 전체 | 약 29만 → 10만 바이트 | 공유 그룹 분리 전후 Jenkins 빌드 |
-| 로컬과 Jenkins 번들 일치 | 같은 커밋에서 로컬 번들 13개, 원격 파일 9개, 카탈로그 해시가 같음 | 2026-11-08 비교 |
-| Jenkins | 한 번 실행으로 두 플랫폼의 v1 빌드, 플레이어, CCD v1, v2 업데이트, CCD v2, 원격 검증(약 12분) | 빌드 #11, #14 |
-| 자동 테스트 | EditMode 27개, PlayMode 13개 | Jenkins #17 |
-| 팝업 30회, 씬 왕복 30회 반복 | 예정 (반복 도구는 구현함) | — |
-| Addressables Profiler, Memory Profiler | 예정 | — |
-| 실기기 네트워크 끊김 | 예정 (모의 끊김은 PlayMode 테스트로 확인) | — |
-| iOS | 예정 | — |
+| 대표 결과 | 확인 방법 |
+|---|---|
+| Windows v1 플레이어에서 봄 콘텐츠로 업데이트 | 서버 요청 로그에서 바뀐 시작 패치 번들과 챕터 2만 다시 받고, 챕터 3과 로컬 번들은 요청하지 않음(기록의 후속 2절). [패치 기록](docs/records/2026-11-04-content-update-v2.md) |
+| 챕터 2 다운로드 약 2.9MB → 79KB → 21KB | 중복 폰트를 로컬 그룹으로, 중복 셰이더를 공유 그룹으로 분리했습니다. [폰트 개선 기록](docs/records/2026-11-04-content-update-v2.md), [공유 그룹 개선 기록](docs/records/2026-11-05-ccd-v1-v2.md) |
+| 미리보기 요청이 겹쳐도 최신 요청만 표시 | PlayMode 테스트에서 완료 순서를 제어해 늦은 응답 반환, 닫은 뒤 도착한 결과 반환, 실패 후 재시도, 교체 시 반환을 확인했습니다. [테스트 코드](Assets/LobbyFlow/Tests/PlayMode/PreviewPresenterTests.cs) |
 
-## 흐름
+## 직접 재현하기
 
+Windows와 Unity 6000.3.9f1에서 로컬 콘텐츠 서버로 겨울 v1에서 봄 v2로 바뀌는 과정을 재현할 수 있습니다. Unity CCD 계정이나 키는 필요 없습니다.
+
+1. 저장소를 복제하고 `git fetch origin content/v2`를 실행합니다.
+2. Unity의 **Tools ▸ Addressables Delivery ▸ 빌드 창**에서 `LocalServer` 프로필을 선택합니다. **전체 빌드 (기준 갱신)** 후 **Windows 개발 빌드**를 만듭니다.
+3. 빌드 창에서 **콘텐츠 서버 ▸ 시작**을 누르고 `Builds/Windows/LobbyFlow.exe`를 실행합니다. 겨울 배너와 챕터 2 다운로드를 확인한 뒤 앱을 닫습니다.
+4. 다음 명령으로 원격 콘텐츠를 바꿉니다.
+
+   ```bash
+   git restore --source=origin/content/v2 -- Assets/LobbyFlowContent/Remote
+   ```
+
+   Unity 창을 눌러 바뀐 파일을 다시 읽게 한 뒤 **콘텐츠 업데이트 빌드**를 실행합니다. **주의:** **전체 빌드**를 누르면 2단계에서 만든 기준이 지워집니다.
+5. 2단계에서 만든 플레이어를 다시 실행합니다. 봄 배너와 신규 코스튬을 확인하고, 챕터 2에 들어가 서버 로그에서 어떤 번들이 다시 요청되는지 확인합니다.
+
+테스트용 파일을 정리하는 방법과 CCD 공개 주소 연결 확인은 [패치 재현 가이드](docs/guides/local-patch-test.md)에 있습니다.
+
+<img src="docs/media/build-window.png" width="360" alt="빌드 창: 프로필, 빌드 상태, 플레이어 빌드, 콘텐츠 서버, CCD 업로드">
+
+빌드 창은 Addressables 빌드가 현재 프로필과 맞지 않으면 플레이어 빌드와 업로드를 막습니다.
+
+## 로딩과 리소스 수명
+
+```text
+Boot → 카탈로그 확인 → 필요한 시작 콘텐츠 다운로드 → Lobby
+Lobby → 캐릭터 상세 팝업 → 미리보기 또는 시즌 코스튬 선택
+Lobby → 챕터 1(내장) 또는 챕터 2/3(진입 시 필요한 콘텐츠 다운로드) → Lobby
 ```
-Boot (빌드 씬, 원격 콘텐츠를 쓰지 않음)
- ├─ 카탈로그 변경 확인 ─ 바뀌었으면 갱신
- ├─ patch_boot 라벨 받을 크기 ─ 0이면 바로 로비
- │                           └ 있으면 패치 팝업 → 진행률 → 다운로드
- └─ 실패 ─ 받아 둔 콘텐츠가 있으면 오프라인으로 시작, 첫 실행이면 오류와 재시도
-Lobby (빌드 씬)
- ├─ 캐릭터 목록, 상세 팝업, 3D 미리보기, 시즌 코스튬 (원격 데이터 CSV가 원격 프리팹을 가리킴)
- └─ 챕터 선택 ─ 챕터 1은 앱 내장, 2·3은 들어갈 때 받는다(남은 크기가 있을 때만 "추가 다운로드" 표시)
-Chapter 1/2/3 (Addressables 씬) ⇄ Lobby
-```
 
-## 설계 판단
-
-### 1. 로딩 요청의 수명을 화면의 수명과 나눈다
-
-`CharacterPreviewPresenter`는 요청마다 번호를 매기고, 결과가 도착했을 때 마지막 요청이 아니면 화면에 붙이지 않고 바로 반환한다. Addressables 로드는 중간에 멈출 수 없어서 "취소"는 요청일 뿐이다. 그래서 취소한 뒤에도 완료를 기다렸다가 반환한다.
-
-PlayMode 테스트가 순서를 직접 정하는 가짜 로더로 이 규칙을 검사한다.
-- 늦게 온 결과는 반환된다.
-- Dispose 뒤에 온 결과도 반환된다.
-- 취소된 요청은 새 요청을 덮지 않는다.
-- 실패한 요청은 다시 시도할 수 있다.
-- 교체할 때 이전 리소스는 한 번만 반환된다.
-
-### 2. 핸들의 소유자는 하나다
-
-| 리소스 | 소유자 | 반환 시점 |
-|---|---|---|
-| 미리보기 프리팹과 인스턴스 | 상세 팝업, 던전 화면의 프레젠터 | 캐릭터 전환, 화면 닫힘 |
-| 로비 초상, BGM, 배너 | 로비 화면의 `AssetHandleSet` | 로비 화면 파괴 |
-| 챕터 씬 | Addressables(씬 언로드 시 자동) | 다음 씬 전환 |
-| 카탈로그, 다운로드 핸들 | 패치 서비스 | 결과를 읽은 직후 |
-
-`ResourceCounters`가 소유자가 기록한 보유 수를 세고, 반복 계측 도구(`RepeatRunner`)는 팝업 열고 닫기와 씬 왕복을 30회 돌린 뒤 시작 값으로 돌아오는지 CSV로 남긴다.
-
-### 3. 로컬과 원격은 "이게 없으면 로비까지 갈 수 있나"로 나눈다
-
-로비까지 필요한 것(UI 이미지, 폰트, 캐릭터, 챕터 1, 기본 데이터)은 앱에 넣고 출시 뒤 바꾸지 않는다. 시즌 코스튬, 이벤트 배너, 챕터 2·3은 원격에 두고 앱 업데이트 없이 바꾼다. 원격 데이터 CSV 한 줄과 프리팹 하나면 앱 업데이트 없이 코스튬이 늘어난다(v2에서 3개 → 4개).
-
-### 4. 콘텐츠 버전은 브랜치와 기준 파일로 관리한다
-
-- `main`은 v1이고, `content/v2`는 원격 폴더(`Assets/LobbyFlowContent/Remote`)만 바꾼 커밋이다. 무결성 검사가 이 규칙을 지키는지 본다.
-- v1 전체 빌드가 만든 `addressables_content_state.bin`을 커밋하고, v2는 그 기준으로 콘텐츠 업데이트 빌드를 한다.
-- CCD에는 릴리스마다 `v1`, `v2` 배지를 붙여 두 버전을 함께 서비스한다.
-
-### 5. 같은 커밋이면 어디서 빌드해도 같은 번들이 나와야 한다
-
-로컬에서 올린 콘텐츠를 Jenkins가 만든 앱이 받으려면 번들 해시가 같아야 한다. 위 세 줄은 빌드 환경마다 번들이 달라지던 원인이고, 아래 두 줄은 두 환경의 번들을 비교하다 함께 찾은 그룹 구성 문제다.
-
-| 원인 | 막은 방법 |
+| 받을 크기 확인 | 받는 중 |
 |---|---|
-| 공통 번들 이름이 프로젝트 폴더 이름의 해시(Jenkins 작업 폴더와 다름) | 접두어 고정, 테스트 |
-| 에디터가 동적 TMP 폰트에 쓴 글자를 채운 채 저장 | 저장 직전과 빌드 전 비우기, 검사 스크립트 |
-| TMP 셰이더의 D3D11 디버그 정보가 빌드 환경마다 다름(Windows만) | 해당 pragma 제거, 검사 스크립트 |
-| 폴더 항목에 씬과 재질을 함께 두면 업데이트 빌드가 재질 위치를 씬 번들로 바꿔 씀(Addressables 2.8.1) | 씬은 파일 항목으로 분리, 테스트 |
-| 그룹에 넣지 않은 공유 에셋(셰이더, 입력 액션, 버튼음)이 번들마다 복사됨 | 공유 그룹, Analyze 중복 검사를 테스트로 |
+| ![업데이트 팝업, 17KB](docs/media/patch-popup.png) | ![진행률 59%, 10KB / 17KB](docs/media/patch-progress.png) |
 
-### 6. CI는 반복 작업을 없애는 쪽으로 고쳤다
+카탈로그 확인에 실패하면 `patch_boot` 콘텐츠를 이미 다 받아 두었는지 확인합니다. 받아 두었으면 저장된 콘텐츠로 로비를 열고, 아니면 오류와 재시도를 표시합니다.
 
-- `main` 폴링 실행은 검사와 테스트만 한다. 빌드와 업로드는 사람이 파라미터를 골라 누른 실행에서만 하고, 실행 중에 다시 묻지 않는다.
-- 기준(v1) 재생성과 그 기준으로 만드는 v2 업데이트는 한 실행(`content-release`)에 묶었다. 실행을 나누면 체크아웃이 새 기준 파일을 이전 커밋 상태로 되돌린다.
-- 업로드 뒤에는 공개 주소의 카탈로그 해시와 모든 파일 크기를 확인한다. CCD는 배지를 옮긴 뒤 공개 주소에 반영되기까지 1~2분 걸렸다.
-
-## AI와 함께 작업하며 찾은 문제
-
-동작 규칙과 완료 기준은 내가 정했고, 반복 코드, 테스트 도구, CI 스크립트 초안과 로그 분석은 AI(Claude Code)가 맡았다. 완료는 실제 실행(에디터 플레이, 플레이어, 테스트, Jenkins)으로 확인한 것만 인정했다. 아래는 AI 초안이나 첫 설계에서 나온 문제 가운데 대표적인 것이다.
-
-| 문제 | 발견 | 수정 |
-|---|---|---|
-| 여러 화면이 같은 `Awaitable`을 함께 기다리게 함. Unity `Awaitable`은 한 번만 기다릴 수 있다 | 초안 검토 | 진행 중 표시를 두고 나머지는 끝나기를 기다림 |
-| JSON 카탈로그를 설정 값만으로 켬. 빌드 결과는 `.bin` | 빌드 결과 파일 | 패키지 소스에서 스크립트 심볼로 갈리는 것을 찾아 심볼을 넣고, 심볼과 설정이 다르면 빌드 거부 |
-| 에디터의 Use Existing Build로 v2 패치를 확인하려 함. 업데이트 빌드가 로컬 카탈로그도 새로 써서 에디터가 이미 v2가 됨 | 빌드 결과 파일 시각 | 출시본 역할은 전체 빌드 직후 만든 플레이어가 맡음 |
-| 폰트를 그룹에 넣지 않아 원본 TTF(4.69MB)가 챕터 씬 번들마다 복사됨 | 번들 크기가 내용에 비해 큼, 빌드 리포트 | 폰트를 로컬 그룹으로. 챕터 다운로드 2.9MB → 79KB |
-| 플레이어 빌드가 Addressables 결과가 있는지만 확인해, 다른 프로필로 만든 결과(localhost)가 들어감 | `settings.json` 시각과 내용 | 현재 프로필의 원격 주소가 없으면 빌드 거부 |
-| 무결성 테스트가 저장되지 않는 `entry.IsFolder`로 폴더를 판별. 에디터에서는 통과, 새로 받은 Jenkins 작업 폴더에서만 실패 | 테스트 결과 XML | 에셋 데이터베이스로 판별. 로컬 통과가 깨끗한 환경을 보장하지 않는다는 사례 |
-| 첫 Jenkinsfile이 실행 한 번에 Addressables 빌드를 한 번만 해서 기준 재생성과 v2 업데이트를 Jenkins로 못 함 | 손으로 두 플랫폼을 다시 만들다가 사용자가 목적에 어긋난다고 지적 | `content-release` 모드 |
-| 챕터 폴더 항목에 씬과 재질을 함께 둠. v2 카탈로그에서 챕터 1 재질이 씬 번들을 가리킴 | Jenkins와 로컬 파일 목록 비교, 카탈로그 데이터를 풀어 대조, 패키지 소스에서 원인 확인 | 씬과 재질 항목 분리, 테스트. v2에서 챕터 1을 다시 들어가 보지 않아 패치 확인 때는 놓쳤다 |
-| Windows 폰트 번들만 로컬과 Jenkins에서 19바이트 다름 | 두 번들을 Unity 도구로 풀고 셰이더 압축 블록을 직접 해제해 비교, DX11 디버그 청크만 다름 | TMP 셰이더의 디버그 pragma 제거. Android는 DX11을 안 써서 같았다 |
-| URP Lit 셰이더가 재질을 가진 번들 8개에 약 50KB씩 복사됨. 폰트와 같은 종류인데 셰이더는 보지 않았다 | 번들을 풀어 셰이더 이름을 세어 봄 | 공유 그룹, Analyze 중복 검사를 테스트로. 챕터 2 다운로드 79KB → 21KB |
-
-## 테스트와 검사
-
-| 종류 | 내용 |
+| 네트워크를 끊고 시작 | 연결 후 재시도 |
 |---|---|
-| 무결성 검사 (`ci/integrity.ps1`, Unity 없이) | `content/v2`가 원격 폴더만 바꾸는지, 기준 파일 커밋, JSON 카탈로그 심볼, 빌드 도중 상태(`preloadedAssets`, `link.xml`) 미커밋, 동적 폰트 비움, D3D11 디버그 셰이더, 키 미커밋 |
-| EditMode | CSV 파서, 데이터 검증, 데이터의 모든 주소가 실제 파일로 이어지는지, 다운로드 라벨, 설정과 프로필, 그룹 규칙, Analyze 번들 중복, 빌드 씬과 Resources의 원격 에셋 직접 참조 |
-| PlayMode | 미리보기 요청 규칙, 지연·실패 주입 로더, 모의 패치(끊긴 다운로드 이어 받기, 오프라인 두 경로) |
-| 업로드 뒤 | 공개 주소의 카탈로그 해시(배지별), 모든 파일의 존재와 크기 |
+| ![서버에 연결할 수 없습니다 오류 팝업](docs/media/offline-error.png) | ![재시도 뒤 시작 콘텐츠 다운로드](docs/media/offline-retry.png) |
 
-모의 실패(지연·실패 주입, 모의 패치)는 화면 흐름 검증용이고 실제 네트워크 장애 검증과 구분해 기록한다.
+위 화면은 Windows 개발 빌드에서 네트워크를 실제로 끊고 시작한 결과입니다. 연결을 되살린 뒤 재시도하면 카탈로그 확인과 시작 콘텐츠 다운로드가 이어집니다.
 
-## 직접 실행해 보기
+다운로드가 도중에 끊기면 재시도를 표시하고, 다시 시도할 때 이미 받은 번들은 건너뜁니다. 이 경로는 모의 패치(PlayMode 테스트와 테스트 메뉴)로 확인했습니다.
 
-- Unity 6000.3.9f1로 프로젝트를 연다. 원격 콘텐츠는 작성자의 CCD 공개 버킷에서 받으므로 키가 필요 없다.
-- **Tools ▸ Addressables Delivery ▸ 빌드 창**에서 CCD 연결을 확인하고, CCD 프로필로 전체 빌드한 뒤 Windows 개발 빌드를 만든다.
-- 콘텐츠 버전을 직접 바꿔 보려면 로컬 콘텐츠 서버로 한다: [Addressables 패치 직접 확인하기](docs/guides/local-patch-test.md)
-- 미리 빌드한 Windows, Android 개발 빌드: 예정
+<img src="docs/media/preview-costume.png" width="640" alt="캐릭터 상세 팝업의 겨울 축제 코스튬 미리보기">
 
-## 다른 프로젝트에서 쓰기
+미리보기는 요청마다 번호를 붙입니다. 사용자가 다른 항목을 고르거나 팝업을 닫아도 진행 중인 Addressables 작업은 완료될 수 있습니다. 로더는 취소된 작업의 핸들을 완료 후 반환하고, 프레젠터는 전달받은 결과가 이미 지난 요청이면 인스턴스를 만들기 전에 반환합니다. [미리보기 프레젠터](Assets/LobbyFlow/Runtime/Preview/CharacterPreviewPresenter.cs), [Addressables 로더](Assets/LobbyFlow/Runtime/Loading/AddressablesPreviewAssetLoader.cs)
 
-배포 코드는 `Packages/com.frenil.addressables-delivery`에 있다. 내용은 다음과 같다.
-- 프로젝트에 적용 메뉴, 빌드 창, CCD 또는 명령으로 올리는 다른 저장소 업로드와 원격 검증
-- 시작 패치 서비스, 설정과 그룹 규칙 테스트
-- Jenkins 템플릿 내보내기
-
-git URL로 추가하고 메뉴 두 번과 설정 에셋 입력으로 붙인다.
-
-- [패키지 README](Packages/com.frenil.addressables-delivery/README.md)
-- [새 프로젝트 적용 가이드](docs/guides/new-project-setup.md)
-
-이 데모 안에서만 확인했고, 빈 프로젝트에 붙여 보는 확인은 아직 하지 않았다.
-
-## 문서
-
-| 문서 | 내용 |
+| 리소스 | 소유권과 반환 시점 |
 |---|---|
-| [SPEC](docs/SPEC.md) | 범위, 동작 규칙, 그룹과 라벨, 패치 시퀀스, 메모리 규칙, Jenkins |
-| [LocalServer 패치 기록](docs/records/2026-11-04-content-update-v2.md) | v1 → v2 번들 변화와 받은 크기, 폰트 중복 수정 전후 |
-| [CCD 패치 기록](docs/records/2026-11-05-ccd-v1-v2.md) | Windows, Android CCD 패치, 배지 전환, 기준 재생성 기록 |
-| [Jenkins 설치와 등록](docs/guides/jenkins-setup.md) | Windows PC에 Jenkins 설치, Credentials, 파라미터 |
+| 미리보기 프리팹과 인스턴스 | 프레젠터가 소유하고, 미리보기 교체 또는 화면 닫기 시 반환 |
+| 로비 초상, BGM, 배너 | 로비의 `AssetHandleSet`이 소유하고, 로비 화면 파괴 시 반환 |
+| 챕터 씬 | 정상 로드 후에는 씬 언로드 시 Addressables가 반환하고, 로드 실패 시 씬 전환 코드가 반환 |
+| 카탈로그와 다운로드 작업 | 패치 서비스가 결과를 읽은 뒤 반환 |
 
-## 남은 일과 한계
+## 콘텐츠 업데이트와 빌드 검증
 
-- iOS 빌드와 macOS Jenkins 에이전트가 없다.
-- Profiler 캡처, 30회 반복 기록, Memory Profiler 비교, 시연 영상이 아직 없다.
-- 실기기에서 실제로 네트워크를 끊은 검증은 아직 없다. 지금은 모의 끊김만 확인했다.
-- Android 확인은 화면으로만 했다. 기기 로그(logcat)는 보지 않았다.
-- 다른 PC에서 소스로 빌드한 번들이 같게 나오는지는 확인하지 않았다(로컬 PC와 Jenkins 작업 폴더만 비교).
-- 패키지의 다른 저장소(Custom) 업로드는 실제 S3/R2 계정으로 확인하지 않았다.
-- 데모 규모라 코스튬은 한 번들이다. 하나만 써도 코스튬 번들 전체가 메모리에 올라온다.
+UI, 폰트, 기본 캐릭터와 데이터, 챕터 1은 로컬 그룹에 둡니다. 시즌 배너와 코스튬, 챕터 2와 3은 원격 그룹에 둡니다. v2에서는 원격 CSV와 프리팹을 추가해 앱 업데이트 없이 코스튬을 3개에서 4개로 늘렸습니다.
 
-## 환경
+<img src="docs/media/chapter-download.png" width="640" alt="챕터 2 진입 시 21KB 다운로드 팝업">
 
-Unity 6000.3.9f1 (URP), Addressables 2.8.1, TextMeshPro, Input System, UI는 [`com.frenil.uisystem`](https://github.com/Frenil-client/unity-ui-system). 원격 저장소는 Unity CCD, CI는 Windows PC의 Jenkins다.
+원격 챕터는 들어갈 때 받을 것이 남아 있으면 크기를 보여 주고 받은 뒤 진입합니다.
 
-## 라이선스
+`main`의 v1 전체 빌드에서 만든 `addressables_content_state.bin`을 기준으로, `content/v2`의 원격 폴더 변경분을 콘텐츠 업데이트 빌드에 사용합니다.
 
-[MIT](LICENSE)
+Jenkins의 `content-release`는 플랫폼마다 v1 전체 빌드부터 v2 업데이트까지 한 실행에 묶고, CCD 업로드 후 공개 주소에서 카탈로그 해시와 파일 존재 및 크기를 검사합니다. [배포 파이프라인](Jenkinsfile), [Jenkins 설정 가이드](docs/guides/jenkins-setup.md)
+
+![Jenkins #14 content-release 단계: Windows v1, v2, Android v1, v2](docs/media/jenkins-content-release.png)
+
+![CCD Windows 버킷 릴리스: 릴리스 9에 v1, 릴리스 10에 v2와 latest 배지](docs/media/ccd-releases.png)
+
+| 검증 범위 | 확인 결과 |
+|---|---|
+| Windows, 로컬 콘텐츠 서버 | v1 플레이어에서 v2 카탈로그 갱신과 변경된 번들만 다시 받는 동작을 서버 요청 로그로 확인 |
+| Windows, Unity CCD | 카탈로그 갱신, 코스튬 추가, 챕터 2 재다운로드를 `Player.log`와 화면으로 확인. 개발 빌드의 v1/v2 배지 전환으로 양방향 갱신도 확인 |
+| Android 실기기, Unity CCD | 겨울에서 봄으로 바뀐 배너, 신규 코스튬, 챕터 2 변경을 화면으로 확인. 기기별 번들 요청 내역은 미계측 |
+| Windows 빌드 비교 | 동일 PC의 로컬 빌드와 Jenkins 작업 폴더에서 로컬 번들 13개, 원격 파일 9개 및 카탈로그 해시 일치 |
+| Jenkins | Windows와 Android 콘텐츠 릴리스 실행 확인(#11, #14). 패키지 분리 후 검사 전용 실행에서 EditMode 27개, PlayMode 13개 통과(#17) |
+
+[LocalServer 검증 기록](docs/records/2026-11-04-content-update-v2.md), [CCD 검증 기록](docs/records/2026-11-05-ccd-v1-v2.md)
+
+## 문제를 좁힌 과정
+
+동작 규칙과 완료 기준은 직접 정하고, AI는 반복 코드와 테스트 도구, CI 초안, 로그 분석에 활용했습니다. 다음 세 사례는 빌드 결과와 실행 기록을 바탕으로 검증 방법이나 설계를 바꾼 경우입니다.
+
+1. **v1 플레이어를 고정해 업데이트를 검증했습니다.** 에디터에서 콘텐츠 업데이트를 빌드하면 로컬 카탈로그도 v2로 바뀌었습니다. v1 전체 빌드 직후 만든 Windows 플레이어를 보존하고, 서버 콘텐츠만 v2로 교체해 카탈로그 갱신과 요청 번들을 확인했습니다. [패치 검증 기록](docs/records/2026-11-04-content-update-v2.md)
+2. **Windows 번들 차이를 셰이더까지 좁혔습니다.** 로컬과 Jenkins의 폰트 에셋은 같았지만 Windows 폰트 번들만 달랐습니다. 두 번들을 풀어 셰이더 블록을 비교해 DX11 디버그 정보에서 차이를 찾았습니다. TMP 셰이더에서 해당 지시문을 제거하고 무결성 검사로 재유입을 막았습니다. [CCD 검증 기록](docs/records/2026-11-05-ccd-v1-v2.md)
+3. **변경하지 않은 챕터의 의존성도 확인했습니다.** v2 카탈로그를 비교하다 챕터 1 재질이 기존 재질 번들 대신 씬 번들을 가리키는 것을 발견했습니다. 씬과 재질을 묶었던 폴더 항목을 분리하고, 그룹 구성 규칙을 테스트로 추가했습니다. [그룹 구성 테스트](Packages/com.frenil.addressables-delivery/Tests/Editor/DeliverySetupTests.cs)
+
+## 테스트와 패키지
+
+- **EditMode와 CI 무결성 검사**에서 CSV와 Addressables 주소 및 라벨, 번들 중복, 원격 에셋 직접 참조, v2 변경 범위, 빌드 설정을 검사합니다. [EditMode 테스트](Assets/LobbyFlow/Tests/EditMode), [CI 무결성 검사](ci/integrity.ps1)
+- **PlayMode**에서 미리보기 요청 경합, 실패 주입, 모의 패치 중단과 재시도, 캐시 유무 판정을 검사합니다. [PlayMode 테스트](Assets/LobbyFlow/Tests/PlayMode)
+- 패키지 `com.frenil.addressables-delivery`에 시작 패치 서비스, 빌드와 업로드 도구, 그룹 검사, Jenkins 템플릿을 분리했습니다. [패키지 README](Packages/com.frenil.addressables-delivery/README.md), [새 프로젝트 적용 가이드](docs/guides/new-project-setup.md)
+
+![Jenkins #17 테스트 결과: 40개 통과](docs/media/jenkins-tests.png)
+
+## 남은 검증
+
+- 팝업 열기와 닫기, 씬 왕복을 각각 30회 반복하는 CSV 계측 도구는 구현했습니다. 플레이어의 반복 결과와 Addressables Profiler 및 Memory Profiler 캡처는 아직 수집하지 않았습니다. [반복 계측 도구](Assets/LobbyFlow/Runtime/Diagnostics/RepeatRunner.cs)
+- 네트워크 중단은 Windows에서 시작 전에 끊은 경우만 실제로 확인했습니다. 다운로드 도중 끊김과 Android 실기기의 끊김은 검증 전입니다.
+- 새 빈 프로젝트에 git 주소로 패키지를 설치하고 프로젝트에 적용과 설정 검사까지 확인했습니다. 그 프로젝트에서 원격 그룹 구성, 빌드, 업로드까지는 해 보지 않았습니다.
+- iOS 빌드, 다른 PC에서의 번들 일치, Custom 저장소 실계정 업로드는 검증 전입니다.
+- Windows와 Android 개발 빌드 다운로드는 공개 전입니다.
+
+## 환경과 문서
+
+Unity 6000.3.9f1, URP, Addressables 2.8.1, TextMeshPro, Input System, `com.frenil.uisystem`, Unity CCD, Jenkins.
+
+- [프로젝트 사양](docs/SPEC.md)
+- [MIT 라이선스](LICENSE)

@@ -461,7 +461,7 @@ Unity 안에서(EditMode 테스트. 데모의 `ContentIntegrityTests`와 패키�
 | 2 | Addressables 설치, 콘텐츠를 `Assets/LobbyFlowContent`로 옮기고 로컬·원격 그룹 구성, 데이터를 CSV로 전환, 로더 교체와 `Release` 경로 적용, 실제 패치 서비스. LocalServer 프로필로 v1 빌드 → `content/v2` 패치 1회 검증. Addressables Profiler로 팝업 열고 닫기 구간 캡처. Android 첫 플레이어 빌드(완료, 2026-11-05 CCD로 화면 확인) |
 | 3 | CCD 연결(프로필 경로와 업로드만 교체), 챕터 진입 다운로드, CCD로 v2 패치 재검증(Windows, Android 완료, 2026-11-05), 실기기 네트워크 끊김 검증 |
 | 4 | Jenkins: 테스트, 무결성 검사, Addressables 빌드, CCD 업로드, 원격 검증, Android 빌드 |
-| 5 | iOS 빌드 연결, 30회 반복 계측과 Memory Profiler 비교, 시연 영상, README |
+| 5 | iOS 빌드 연결, 30회 반복 계측과 Memory Profiler 비교, README(화면 이미지와 GIF) |
 
 ---
 
@@ -484,7 +484,7 @@ Unity 안에서(EditMode 테스트. 데모의 `ContentIntegrityTests`와 패키�
 ## 11. 완료 기준과 산출물
 
 - Android 빌드와 iOS 빌드 각 1개, 재현 방법. iOS 서명·배포 범위는 Apple Developer 계정 여부에 맞춰 명시한다.
-- 정상 흐름, 패치 다운로드, 대표 예외 상황을 담은 60~90초 시연 영상.
+- 정상 흐름, 패치 다운로드, 대표 예외 상황을 담은 README 화면 이미지와 겨울 → 봄 GIF(`docs/media`). 시연 영상은 README에 넣지 않는다(2026-11-09 결정, GIF와 이미지가 같은 장면을 다룬다).
 - 팝업 열기와 닫기, 씬 왕복을 각각 30회 이상 반복한 확인 기록.
 - Addressables Profiler에서 로드 후 증가하고 반환 후 감소하는 구간의 캡처 또는 영상.
 - 반복 전후 Memory Profiler 스냅샷 비교 결과.
