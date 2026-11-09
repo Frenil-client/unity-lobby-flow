@@ -1,5 +1,5 @@
 id,character_id,name,seasonal,prefab
-knight_winter,knight,겨울 축제,true,Costumes/Character_knight_winter.prefab
-ranger_winter,ranger,겨울 축제,true,Costumes/Character_ranger_winter.prefab
-mage_winter,mage,겨울 축제,true,Costumes/Character_mage_winter.prefab
+knight_winter,knight,겨울 축제,false,Costumes/Character_knight_winter.prefab
+ranger_winter,ranger,겨울 축제,false,Costumes/Character_ranger_winter.prefab
+mage_winter,mage,겨울 축제,false,Costumes/Character_mage_winter.prefab
 mage_spring,mage,봄 축제,true,Costumes/Character_mage_spring.prefab
