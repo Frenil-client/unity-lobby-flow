@@ -71,6 +71,8 @@ Lobby → 챕터 1(내장) 또는 챕터 2/3(진입 시 필요한 콘텐츠 다�
 | 챕터 씬 | 정상 로드 후에는 씬 언로드 시 Addressables가 반환하고, 로드 실패 시 씬 전환 코드가 반환 |
 | 카탈로그와 다운로드 작업 | 패치 서비스가 결과를 읽은 뒤 반환 |
 
+Windows 개발 빌드에서 로비와 챕터 1을 30회 왕복하는 동안 보유 리소스 8, 인스턴스 0, 로드된 번들 3이 매 회 같았습니다. 할당 메모리는 첫 왕복에서 늘어난 뒤 114.6~115.2MB 사이에 머물렀습니다. [반복 계측 기록](docs/records/2026-11-09-repeat-30.md)
+
 ## 콘텐츠 업데이트와 빌드 검증
 
 UI, 폰트, 기본 캐릭터와 데이터, 챕터 1은 로컬 그룹에 둡니다. 시즌 배너와 코스튬, 챕터 2와 3은 원격 그룹에 둡니다. v2에서는 원격 CSV와 프리팹을 추가해 앱 업데이트 없이 코스튬을 3개에서 4개로 늘렸습니다.
@@ -115,7 +117,7 @@ Jenkins의 `content-release`는 플랫폼마다 v1 전체 빌드부터 v2 업데
 
 ## 남은 검증
 
-- 팝업 열기와 닫기, 씬 왕복을 각각 30회 반복하는 CSV 계측 도구는 구현했습니다. 플레이어의 반복 결과와 Addressables Profiler 및 Memory Profiler 캡처는 아직 수집하지 않았습니다. [반복 계측 도구](Assets/LobbyFlow/Runtime/Diagnostics/RepeatRunner.cs)
+- 반복 계측은 챕터 1 왕복 30회만 기록했습니다. 상세 팝업 열고 닫기 30회, Addressables Profiler와 Memory Profiler 캡처는 수집하지 않았습니다. Mono 사용량은 GC 없이 잰 값이라 관리 힙 누수 여부는 판단하지 않았습니다. [반복 계측 도구](Assets/LobbyFlow/Runtime/Diagnostics/RepeatRunner.cs)
 - 네트워크 중단은 Windows에서 시작 전에 끊은 경우만 실제로 확인했습니다. 다운로드 도중 끊김과 Android 실기기의 끊김은 검증 전입니다.
 - 새 빈 프로젝트에 git 주소로 패키지를 설치하고 프로젝트에 적용과 설정 검사까지 확인했습니다. 그 프로젝트에서 원격 그룹 구성, 빌드, 업로드까지는 해 보지 않았습니다.
 - iOS 빌드, 다른 PC에서의 번들 일치, Custom 저장소 실계정 업로드는 검증 전입니다.
@@ -127,3 +129,4 @@ Unity 6000.3.9f1, URP, Addressables 2.8.1, TextMeshPro, Input System, `com.freni
 
 - [프로젝트 사양](docs/SPEC.md)
 - [MIT 라이선스](LICENSE)
+- [전체 포트폴리오](https://github.com/Frenil-client/frenil-portfolio)
