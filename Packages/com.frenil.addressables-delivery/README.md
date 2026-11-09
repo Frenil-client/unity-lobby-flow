@@ -106,7 +106,7 @@ var bytes = await patch.GetDownloadSizeAsync("chapter02", token);
 |---|---|---|
 | `Addressables` | `-deliveryProfile 이름`(기본 원격 프로필), `-deliveryMode full\|update` | 전체 빌드 또는 콘텐츠 업데이트 빌드 |
 | `Player` | 없음 | 현재 플랫폼 개발 빌드(Windows, Android) |
-| `Upload` | `-deliveryBadge 이름\|none`, `-deliveryNotes 메모` | 업로드 후 공개 주소의 카탈로그 해시와 모든 파일 크기 확인 |
+| `Upload` | `-deliveryBadge 이름\|none`, `-deliveryNotes 메모`, `-deliveryCheckLatest false` | 업로드 후 공개 주소의 카탈로그 해시(붙인 배지, 그다음 latest)와 모든 파일 크기 확인. 바로 뒤에 다른 릴리스를 올릴 실행은 latest 검증을 끈다(CDN 캐시) |
 
 ## 이 패키지가 막는 문제
 

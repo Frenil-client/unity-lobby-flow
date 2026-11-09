@@ -46,8 +46,13 @@ namespace AddressablesDelivery.Editor
 
         /// <summary>
         /// 원격 저장소에 올린 뒤, 공개 주소의 카탈로그 해시가 올린 것과 같은지, 올린 파일이 모두 같은 크기로 있는지 확인한다.
-        /// <c>-deliveryBadge 이름|none</c>(선택), <c>-deliveryNotes 메모</c>(선택). 키는 CI 가 환경 변수로 넣는다.
+        /// <c>-deliveryBadge 이름|none</c>(선택), <c>-deliveryNotes 메모</c>(선택), <c>-deliveryCheckLatest false</c>(선택). 키는 CI 가 환경 변수로 넣는다.
         /// </summary>
+        /// <remarks>
+        /// CCD 는 붙인 배지를 먼저 보고 출시 배지(latest)를 본다. 공개 주소는 CDN 이 몇 분 캐시하므로, 바로 뒤에 다른 릴리스를 올릴 실행
+        /// (콘텐츠 릴리스의 v1)은 <c>-deliveryCheckLatest false</c> 로 latest 를 보지 않는다. 여기서 latest 를 읽으면 그 응답이 캐시되어,
+        /// 몇 분 안에 올린 다음 릴리스의 latest 검증이 캐시된 이전 해시를 받고 실패한다(2026-11-09 Jenkins #23).
+        /// </remarks>
         public static void Upload() => Run(() =>
         {
             var badge = Arg("deliveryBadge", null);
@@ -57,15 +62,26 @@ namespace AddressablesDelivery.Editor
             if (!ContentUpload.Upload(Arg("deliveryNotes", $"CI {ContentUpload.DefaultReleaseNotes}"), badge))
                 return false;
 
-            // CCD 는 출시 배지(latest)와 붙인 배지를 모두 본다. Custom 은 배지가 없어 한 번만 본다.
+            // Custom 은 배지가 없어 한 번만 본다.
             var isCcd = DeliverySettings.Current.Storage == RemoteStorage.Ccd;
-            if (!VerifyRemoteCatalog(isCcd ? CcdLocation.ReleaseBadge : null))
+            if (!isCcd)
+                return VerifyRemoteCatalog(null) && VerifyRemoteFiles(null);
+
+            var checkLatest = !string.Equals(Arg("deliveryCheckLatest", "true"), "false", StringComparison.OrdinalIgnoreCase);
+            if (badge != null && !VerifyRemoteCatalog(badge))
                 return false;
 
-            if (isCcd && badge != null && !VerifyRemoteCatalog(badge))
-                return false;
+            if (checkLatest || badge == null)
+            {
+                if (!VerifyRemoteCatalog(CcdLocation.ReleaseBadge))
+                    return false;
+            }
+            else
+            {
+                Debug.Log($"{LogPrefix} 출시 배지({CcdLocation.ReleaseBadge}) 검증은 건너뛴다(-deliveryCheckLatest false)");
+            }
 
-            return VerifyRemoteFiles(isCcd ? badge ?? CcdLocation.ReleaseBadge : null);
+            return VerifyRemoteFiles(badge ?? CcdLocation.ReleaseBadge);
         });
 
         /// <summary>

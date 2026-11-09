@@ -116,7 +116,8 @@ pipeline {
                                 Copy-Item Assets/AddressableAssetsData/${folder}/addressables_content_state.bin ci-logs/baseline/${folder}/
                             """
                             withCcdKeys {
-                                unity("${tag}-v1-upload", target, uploadArgs('v1'))
+                                // 바로 뒤 v2 가 latest 를 옮기므로 여기서는 latest 를 읽지 않는다. 읽으면 CDN 이 그 응답을 캐시해 v2 의 latest 검증이 실패한다.
+                                unity("${tag}-v1-upload", target, uploadArgs('v1', false))
                             }
                         }
 
@@ -169,9 +170,9 @@ def playerArgs() {
     return "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Player'"
 }
 
-// 업로드 뒤 공개 주소의 카탈로그 해시가 올린 것과 같은지까지 확인한다(원격 검증).
-def uploadArgs(String badge) {
-    return "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Upload','-deliveryBadge','${badge}','-deliveryNotes','Jenkins #${env.BUILD_NUMBER} ${badge}'"
+// 업로드 뒤 공개 주소의 카탈로그 해시가 올린 것과 같은지까지 확인한다(원격 검증). checkLatest 가 false 면 붙인 배지만 본다.
+def uploadArgs(String badge, boolean checkLatest = true) {
+    return "'-executeMethod','AddressablesDelivery.Editor.CiBuild.Upload','-deliveryBadge','${badge}','-deliveryNotes','Jenkins #${env.BUILD_NUMBER} ${badge}','-deliveryCheckLatest','${checkLatest}'"
 }
 
 // 원격 콘텐츠 폴더만 main(v1) 또는 content/v2 로 맞춘다. 브랜치는 바꾸지 않는다(SPEC 5.7).

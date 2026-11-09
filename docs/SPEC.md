@@ -390,7 +390,7 @@ Boot 씬 (빌드 내장)
 
 - 파이프라인은 저장소의 `Jenkinsfile`로 관리한다. 설치와 등록 순서는 `docs/guides/jenkins-setup.md`.
 - Jenkins는 작업 폴더에 저장소를 따로 받아 빌드하므로, 열려 있는 Unity 프로젝트와 부딪히지 않는다. 작업 폴더의 `Library/`는 지우지 않고 다음 실행에 쓴다.
-- Unity는 `ci/unity.ps1`로 배치 모드(`-batchmode -nographics -buildTarget <플랫폼>`) 실행한다. 빌드 진입점은 패키지의 `AddressablesDelivery.Editor.CiBuild`(`Addressables`, `Player`, `Upload`, 인자 `-deliveryProfile`, `-deliveryMode`, `-deliveryBadge`, `-deliveryNotes`)이고 빌드 창과 같은 정적 메서드를 부른다. 진입점이 종료 코드를 직접 돌려주므로 `-quit`는 붙이지 않는다.
+- Unity는 `ci/unity.ps1`로 배치 모드(`-batchmode -nographics -buildTarget <플랫폼>`) 실행한다. 빌드 진입점은 패키지의 `AddressablesDelivery.Editor.CiBuild`(`Addressables`, `Player`, `Upload`, 인자 `-deliveryProfile`, `-deliveryMode`, `-deliveryBadge`, `-deliveryNotes`, `-deliveryCheckLatest`)이고 빌드 창과 같은 정적 메서드를 부른다. 진입점이 종료 코드를 직접 돌려주므로 `-quit`는 붙이지 않는다.
 - Windows 서비스로 Jenkins를 돌리면 로컬 시스템 계정으로 실행되어 Unity 라이선스를 찾지 못한다. 서비스 계정을 라이선스를 활성화한 사용자로 바꾼다.
 - 스크립트(`ci/*.ps1`)는 UTF-8 BOM으로 저장한다. Windows PowerShell 5.1은 BOM이 없으면 한글을 ANSI로 읽어 구문이 깨진다.
 
@@ -404,7 +404,7 @@ Boot 씬 (빌드 내장)
 | Addressables 빌드 | CCD 프로필로 `update`(커밋된 기준) / `full` / `none` | 빌드 오류, 기준 파일 없음 | 구현 |
 | 플레이어 빌드 | Windows 실행 파일(zip) 또는 APK, 개발 빌드, 보관 | 빌드 오류, Addressables 빌드가 프로필과 다름 | 구현 |
 | CCD 업로드 | Credentials의 키로 `ugs ccd entries sync -r [-u 배지]` | 업로드·릴리스 오류 | 구현 |
-| 원격 검증 | 업로드 직후 `latest`(와 고른 배지)의 카탈로그 해시를 공개 주소로 받아 로컬 빌드와 비교, 배지를 옮긴 뒤 공개 주소 반영에 1~2분 걸려 10초 간격으로 최대 4분 다시 시도. 해시가 맞으면 원격 빌드 폴더의 파일(카탈로그, 번들)이 그 릴리스에 모두 같은 크기로 있는지 본다 | 해시 불일치, 파일 없음, 크기 다름 | 구현 |
+| 원격 검증 | 업로드 직후 고른 배지, 그다음 `latest`의 카탈로그 해시를 공개 주소로 받아 로컬 빌드와 비교, 배지를 옮긴 뒤 공개 주소 반영에 1~2분 걸려 10초 간격으로 최대 4분 다시 시도. 공개 주소는 CDN이 몇 분 캐시하므로, 바로 뒤에 v2를 올리는 `content-release`의 v1 업로드는 `latest`를 읽지 않는다(`-deliveryCheckLatest false`). 읽으면 v2의 `latest` 검증이 캐시된 v1 해시를 받아 실패한다(2026-11-09 Jenkins #23, Windows v2 업로드 뒤 4분 동안 v1 해시, 11분 뒤에는 v2 해시). 해시가 맞으면 원격 빌드 폴더의 파일(카탈로그, 번들)이 그 릴리스에 모두 같은 크기로 있는지 본다 | 해시 불일치, 파일 없음, 크기 다름 | 구현 |
 | PlayMode 테스트 | `-runTests -testPlatform PlayMode`. 미리보기 요청 규칙(마지막 요청만 반영, 늦은 결과·Dispose 뒤 결과 반환, 취소, 실패 후 다시 시도), 지연·실패 주입 로더의 반환, 모의 패치의 끊김 후 이어 받기와 오프라인 두 경로. 가짜 로더와 모의 서비스라 네트워크를 쓰지 않는다 | 실패 테스트 1건 이상 | 구현 |
 | iOS 빌드 | Windows에서 Xcode 프로젝트 생성 → macOS에서 archive | 빌드 오류 | 예정 |
 | 보관 | 산출물, 테스트 결과 XML, 단계별 Unity 로그(`ci-logs/`) | — | 구현 |
